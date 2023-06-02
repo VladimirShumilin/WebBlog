@@ -10,8 +10,10 @@ namespace WebBlog.DAL.Models
     public record ArticleTag
     {
         [Required]
+        [Comment("Внешний ключ связи с таблицей Articles")]
         public Guid ArticleId { get; set; }
         [Required]
+        [Comment("Внешний ключ связи с таблицей Tags")]
         public Guid TagId { get; set; }
         public Article Post { get; set; } = null!;
         public Tag Tag { get; set; } = null!;

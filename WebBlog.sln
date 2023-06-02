@@ -7,6 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebBlog", "WebBlog\WebBlog.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebBlog.DAL", "WebBlog.DAL\WebBlog.DAL.csproj", "{A82EC2D6-CAE3-4614-8121-0EF00C5839AD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{92D0ADC2-2F8C-4A7E-9ADE-BC1D0AFA7BD3}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebBlog.Contracts", "WebBlog.Contracts\WebBlog.Contracts.csproj", "{01CDA92E-7097-4A19-A5A8-02D798B70FC0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +28,10 @@ Global
 		{A82EC2D6-CAE3-4614-8121-0EF00C5839AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A82EC2D6-CAE3-4614-8121-0EF00C5839AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A82EC2D6-CAE3-4614-8121-0EF00C5839AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01CDA92E-7097-4A19-A5A8-02D798B70FC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01CDA92E-7097-4A19-A5A8-02D798B70FC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01CDA92E-7097-4A19-A5A8-02D798B70FC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01CDA92E-7097-4A19-A5A8-02D798B70FC0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

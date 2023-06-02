@@ -31,7 +31,7 @@ namespace WebBlog.DAL.Migrations
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
                     Discriminator = table.Column<string>(type: "TEXT", nullable: false),
-                    CustomField = table.Column<string>(type: "TEXT", nullable: true),
+                    CustomField = table.Column<string>(type: "varchar(100)", nullable: true, comment: "Дополнительный атрибут пользователя"),
                     UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
@@ -56,8 +56,8 @@ namespace WebBlog.DAL.Migrations
                 name: "Tags",
                 columns: table => new
                 {
-                    TagId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "varchar(20)", nullable: false)
+                    TagId = table.Column<Guid>(type: "TEXT", nullable: false, comment: "Первичный ключ"),
+                    Name = table.Column<string>(type: "varchar(20)", nullable: false, comment: "Название тега")
                 },
                 constraints: table =>
                 {
@@ -89,11 +89,11 @@ namespace WebBlog.DAL.Migrations
                 name: "Articles",
                 columns: table => new
                 {
-                    ArticleId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Title = table.Column<string>(type: "varchar(100)", nullable: false),
-                    Content = table.Column<string>(type: "varchar(1000)", nullable: false),
-                    Created = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    AuthorId = table.Column<string>(type: "varchar(450)", nullable: false)
+                    ArticleId = table.Column<Guid>(type: "TEXT", nullable: false, comment: "Первичный ключ"),
+                    Title = table.Column<string>(type: "varchar(100)", nullable: false, comment: "Название статьи"),
+                    Content = table.Column<string>(type: "varchar(1000)", nullable: false, comment: "Содержание статьи"),
+                    Created = table.Column<DateTime>(type: "TEXT", nullable: false, comment: "Дата создания"),
+                    AuthorId = table.Column<string>(type: "varchar(450)", nullable: false, comment: "Внешний ключ связи с таблицей AspNetUsers")
                 },
                 constraints: table =>
                 {
@@ -219,12 +219,12 @@ namespace WebBlog.DAL.Migrations
                 name: "Comments",
                 columns: table => new
                 {
-                    CommentId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ArticleId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Content = table.Column<string>(type: "varchar(200)", nullable: false),
-                    Title = table.Column<string>(type: "TEXT", nullable: false),
-                    Created = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UserID = table.Column<string>(type: "varchar(450)", nullable: false)
+                    CommentId = table.Column<Guid>(type: "TEXT", nullable: false, comment: "Первичный ключ"),
+                    ArticleId = table.Column<Guid>(type: "TEXT", nullable: false, comment: "Внешний ключ связи с таблицей Articles"),
+                    Content = table.Column<string>(type: "varchar(200)", nullable: false, comment: "Содержание коментария"),
+                    Title = table.Column<string>(type: "varchar(100)", nullable: false, comment: "Заголовок коментария"),
+                    Created = table.Column<DateTime>(type: "TEXT", nullable: false, comment: "Дата создания"),
+                    AuthorID = table.Column<string>(type: "varchar(450)", nullable: false, comment: "Внешний ключ связи с таблицей пользователей AspNetUsers")
                 },
                 constraints: table =>
                 {
@@ -236,8 +236,8 @@ namespace WebBlog.DAL.Migrations
                         principalColumn: "ArticleId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Comments_AspNetUsers_UserID",
-                        column: x => x.UserID,
+                        name: "FK_Comments_AspNetUsers_AuthorID",
+                        column: x => x.AuthorID,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -296,9 +296,9 @@ namespace WebBlog.DAL.Migrations
                 column: "ArticleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Comments_UserID",
+                name: "IX_Comments_AuthorID",
                 table: "Comments",
-                column: "UserID");
+                column: "AuthorID");
         }
 
         /// <inheritdoc />

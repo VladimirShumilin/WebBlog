@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebBlog.DAL.Models
@@ -7,29 +8,29 @@ namespace WebBlog.DAL.Models
     public record Article
     {
         [Key]
+        [Comment("Первичный ключ")]
         public Guid ArticleId { get; set; }
         [Required]
         [Column(TypeName = "varchar(100)")]
+        [Comment("Название статьи")]
         public string Title { get; set; } = null!;
         [Required]
         [Column(TypeName = "varchar(1000)")]
+        [Comment("Содержание статьи")]
         public string Content { get; set; } = null!;
         [Required]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        [Comment("Дата создания")]
         public DateTime Created { get; set; }
 
         [Required]
         [Column(TypeName = "varchar(450)")]
-        [ForeignKey("User")]
+        [ForeignKey(nameof(Author))]
+        [Comment("Внешний ключ связи с таблицей AspNetUsers")]
         public string AuthorId { get; set; } = null!;
-        public BlogUser User { get; set; } = null!; 
+        public BlogUser Author { get; set; } = null!; 
 
         public virtual ICollection<Comment> Comments { get; set; } = null!;
-
-
         public virtual ICollection<Tag> Tags { get; set; } = null!;
-
-       
-
     }
 }

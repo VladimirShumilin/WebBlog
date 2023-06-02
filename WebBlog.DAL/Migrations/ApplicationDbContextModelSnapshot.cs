@@ -240,23 +240,28 @@ namespace WebBlog.DAL.Migrations
                 {
                     b.Property<Guid>("ArticleId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasComment("Первичный ключ");
 
                     b.Property<string>("AuthorId")
                         .IsRequired()
-                        .HasColumnType("varchar(450)");
+                        .HasColumnType("varchar(450)")
+                        .HasComment("Внешний ключ связи с таблицей AspNetUsers");
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("varchar(1000)");
+                        .HasColumnType("varchar(1000)")
+                        .HasComment("Содержание статьи");
 
                     b.Property<DateTime>("Created")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasComment("Дата создания");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("varchar(100)")
+                        .HasComment("Название статьи");
 
                     b.HasKey("ArticleId");
 
@@ -269,31 +274,37 @@ namespace WebBlog.DAL.Migrations
                 {
                     b.Property<Guid>("CommentId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasComment("Первичный ключ");
 
                     b.Property<Guid>("ArticleId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasComment("Внешний ключ связи с таблицей Articles");
+
+                    b.Property<string>("AuthorID")
+                        .IsRequired()
+                        .HasColumnType("varchar(450)")
+                        .HasComment("Внешний ключ связи с таблицей пользователей AspNetUsers");
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("varchar(200)")
+                        .HasComment("Содержание коментария");
 
                     b.Property<DateTime>("Created")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasComment("Дата создания");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("UserID")
-                        .IsRequired()
-                        .HasColumnType("varchar(450)");
+                        .HasColumnType("varchar(100)")
+                        .HasComment("Заголовок коментария");
 
                     b.HasKey("CommentId");
 
                     b.HasIndex("ArticleId");
 
-                    b.HasIndex("UserID");
+                    b.HasIndex("AuthorID");
 
                     b.ToTable("Comments");
                 });
@@ -302,11 +313,13 @@ namespace WebBlog.DAL.Migrations
                 {
                     b.Property<Guid>("TagId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasComment("Первичный ключ");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("varchar(20)");
+                        .HasColumnType("varchar(20)")
+                        .HasComment("Название тега");
 
                     b.HasKey("TagId");
 
@@ -318,7 +331,8 @@ namespace WebBlog.DAL.Migrations
                     b.HasBaseType("Microsoft.AspNetCore.Identity.IdentityUser");
 
                     b.Property<string>("CustomField")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("varchar(100)")
+                        .HasComment("Дополнительный атрибут пользователя");
 
                     b.HasDiscriminator().HasValue("BlogUser");
                 });
@@ -391,13 +405,13 @@ namespace WebBlog.DAL.Migrations
 
             modelBuilder.Entity("WebBlog.DAL.Models.Article", b =>
                 {
-                    b.HasOne("WebBlog.DAL.Models.BlogUser", "User")
+                    b.HasOne("WebBlog.DAL.Models.BlogUser", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Author");
                 });
 
             modelBuilder.Entity("WebBlog.DAL.Models.Comment", b =>
@@ -408,15 +422,15 @@ namespace WebBlog.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebBlog.DAL.Models.BlogUser", "User")
+                    b.HasOne("WebBlog.DAL.Models.BlogUser", "Author")
                         .WithMany()
-                        .HasForeignKey("UserID")
+                        .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Article");
 
-                    b.Navigation("User");
+                    b.Navigation("Author");
                 });
 
             modelBuilder.Entity("WebBlog.DAL.Models.Article", b =>
