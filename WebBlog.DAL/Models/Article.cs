@@ -19,7 +19,6 @@ namespace WebBlog.DAL.Models
         [Comment("Содержание статьи")]
         public string Content { get; set; } = null!;
         [Required]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         [Comment("Дата создания")]
         public DateTime Created { get; set; }
 

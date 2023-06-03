@@ -14,7 +14,7 @@ namespace WebBlog.Contracts.Models.Request.Tag
     public class EditTagRequest
     {
         [Required] // Указываем  параметр как обязательный
-        public long TagID { get; set; }
+        public Guid TagId { get; set; }
 
         //Указываем параметр как обязательный с максимальныой длинной строки 20 символов
         [Required, MinLength(1, ErrorMessage = "Tag name is empty"), StringLength(20, ErrorMessage = "Тag name cannot exceed 20 characters.")]

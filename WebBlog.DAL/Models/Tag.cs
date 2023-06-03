@@ -15,6 +15,6 @@ namespace WebBlog.DAL.Models
         [Comment("Название тега")]
         public string Name { get; set; } = "";
 
-        public virtual ICollection<Article> Articles { get; } = null!;
+        public virtual ICollection<Article> Articles { get; } = new List<Article>(); 
     }
 }

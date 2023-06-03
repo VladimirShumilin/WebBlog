@@ -10,10 +10,8 @@ namespace WebBlog.Contracts.Models.Query.User
     /// <summary>
     /// Представляет сущность BlogUser для отображения в формах 
     /// </summary>
-    public class UserViewModel
+    public class NewUserRequest
     {
-        [Required]
-        public string Id { get; set; } = null!;
         [Required]
         public string Email { get; set; } = null!;
         [Required]

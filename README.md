@@ -67,3 +67,4 @@
 CRUD-операции для моделеи BlogUser реализованы в классе Microsoft.AspNetCore.Identity.UserManager
 
 
+489905d4-74cf-4151-ad5d-86d568ff795e

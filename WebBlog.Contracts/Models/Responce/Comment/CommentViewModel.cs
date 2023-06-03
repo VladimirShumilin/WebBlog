@@ -1,19 +1,21 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using WebBlog.Contracts.Models.Query.User;
 
-namespace WebBlog.Contracts.Models.Request.Comment
+namespace WebBlog.Contracts.Models.Responce.Comment
 {
-    public class EditCommentRequest
+    public class CommentViewModel
     {
-        [Required]
         public Guid CommentId { get; set; }
-        [Required]
         public Guid ArticleId { get; set; }
-        [Required, MinLength(1, ErrorMessage = "Content is empty."), StringLength(200, ErrorMessage = "Content cannot exceed 200 characters.")]
         public string Content { get; set; } = "";
         public string Title { get; set; } = null!;
         public DateTime Created { get; set; }
-        [Required]
         public UserViewModel Author { get; set; } = null!;
     }
 }

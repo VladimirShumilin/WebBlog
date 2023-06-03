@@ -20,7 +20,12 @@ namespace WebBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<IEnumerable<Article>> GetArticlesAsync()
         {
-            return await context.Article.ToListAsync();
+            return await context.Article
+                .AsNoTracking()
+                .Include(a => a.Tags)
+                .Include(a => a.Comments)
+                .Include(a => a.Author)
+                .ToListAsync();
         }
         /// <summary>
         /// Возвращает статью для автора 
@@ -29,7 +34,12 @@ namespace WebBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<IEnumerable<Article>> GetArticlesByAuthorAsync(string authorId)
         {
-            return await context.Article.Where(x => x.AuthorId == authorId).ToListAsync();
+            return await context.Article.Where(x => x.AuthorId == authorId)
+                .AsNoTracking()
+                .Include(a => a.Tags)
+                .Include(a => a.Comments)
+                .Include(a => a.Author)
+                .ToListAsync();
         }
         /// <summary>
         /// Ищзвращает true если статья с указанным Ид существует 
@@ -47,7 +57,11 @@ namespace WebBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<Article?> GetArticleByIDAsync(Guid articleId)
         {
-            return await context.Article.FindAsync(articleId);
+            return await context.Article.AsNoTracking()
+                .Include(a => a.Tags)
+                .Include(a=>a.Comments)
+                .Include(a=>a.Author)
+                .FirstOrDefaultAsync(t => t.ArticleId == articleId);
         }
         /// <summary>
         /// Добавляет статью 

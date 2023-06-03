@@ -23,6 +23,15 @@ namespace SamplWebAppEmptyeBlog.DAL.Repositories
             return await context.Tag.ToListAsync();
         }
         /// <summary>
+        /// Возвращает массив всех имеющихся тегов
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<Tag>> GetTagsForTheArticleAsync(Guid articleId)
+        {
+            return await context.Tag.ToListAsync();
+        }
+        
+        /// <summary>
         /// Возвращает тег с указанным именем 
         /// </summary>
         /// <param name="name"></param>

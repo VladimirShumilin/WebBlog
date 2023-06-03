@@ -20,7 +20,21 @@ namespace WebBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<IEnumerable<Comment>> GetCommentsAsync()
         {
-            return await context.Comment.ToListAsync();
+            return await context.Comment
+                .AsNoTracking()
+                .Include(a => a.Author)
+                .ToListAsync();
+        }
+        /// <summary>
+        /// Возвращает все коментарии для  статьи с ID = articleId
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<Comment>> GetCommentsForTheArticleAsync(Guid articleId)
+        {
+            return await context.Comment.Where(x=>x.ArticleId == articleId)
+                .AsNoTracking()
+                .Include(a => a.Author)
+                .ToListAsync();
         }
 
         /// <summary>
@@ -30,7 +44,9 @@ namespace WebBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<bool> CommentExistsAsync(Guid commentId)
         {
-            return await context.Comment.AnyAsync(e => e.CommentId == commentId);
+            return await context.Comment
+                .AsNoTracking()
+                .AnyAsync(e => e.CommentId == commentId);
         }
         /// <summary>
         /// Возвращает коментарии по указанному Ид 
@@ -39,7 +55,9 @@ namespace WebBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<Comment?> GetCommentByIDAsync(Guid commentId)
         {
-            return await context.Comment.FindAsync(commentId);
+            return await context.Comment.Include(c=>c.Author)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c=>c.CommentId == commentId);
         }
         /// <summary>
         /// Добавляет коментарии 

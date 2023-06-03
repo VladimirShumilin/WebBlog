@@ -4,15 +4,19 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WebBlog.Contracts.Models.Query.User;
 
 namespace WebBlog.Contracts.Models.Request.Comment
 {
     public class NewCommentRequest
     {
-        [Required] // Указываем  параметр как обязательный
-        Guid ArticleId { get; set; }
+        [Required]
+        public Guid ArticleId { get; set; }
         [Required, MinLength(1, ErrorMessage = "Content is empty."), StringLength(200, ErrorMessage = "Content cannot exceed 200 characters.")]
         public string Content { get; set; } = "";
+        [Required, MinLength(1, ErrorMessage = "Content is empty."), StringLength(100, ErrorMessage = "Content cannot exceed 100 characters.")]
         public string Title { get; set; } = null!;
+        [Required]
+        public string AuthorId { get; set; } = null!;
     }
 }

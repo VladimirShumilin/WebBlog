@@ -13,6 +13,7 @@ namespace WebBlog.DAL.Interfaces
     public interface ICommentRepository 
     {
         Task<IEnumerable<Comment>> GetCommentsAsync();
+        Task<IEnumerable<Comment>> GetCommentsForTheArticleAsync(Guid articleId);
         Task<bool> CommentExistsAsync(Guid commentId);
         Task<Comment?> GetCommentByIDAsync(Guid commentId);
         Task InsertCommentAsync(Comment comment);
