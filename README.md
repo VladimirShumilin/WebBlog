@@ -2,6 +2,7 @@
 
 #### Данные
 База данных проекта Sqlite файл базы \WebBlog\Data\WebBlogDatabase.db 
+
 Модель сознания БД с нуля \WebBlog.DAL\Migrations\20230602094411_InitialCreate.cs
 
 #### Пользователи 
