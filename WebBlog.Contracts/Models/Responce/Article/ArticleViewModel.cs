@@ -21,7 +21,7 @@ namespace WebBlog.Contracts.Models.Responce.Article
 
         public DateTime Created { get; set; }
 
-        public UserViewModel Author { get; set; } = null!;
+        public string AuthorId { get; set; } = null!;
 
         public virtual ICollection<CommentViewModel> Comments { get; set; } = null!;
         public virtual ICollection<TagViewModel> Tags { get; set; } = null!;

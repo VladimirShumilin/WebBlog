@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebBlog.Contracts.Models.Request.Role;
+using WebBlog.DAL.Models;
 
 namespace WebBlog.Controllers
 {
@@ -31,7 +32,7 @@ namespace WebBlog.Controllers
         [HttpGet]
         public async Task<IEnumerable<IdentityRole>> GetRoles()
         {
-            var roles = await _roleManager.Roles.ToListAsync();
+            var roles = await _roleManager.Roles.ToListAsync(CancellationToken.None);
             return roles;
         }
         /// <summary>

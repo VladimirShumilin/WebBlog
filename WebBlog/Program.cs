@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SamplWebAppEmptyeBlog.DAL.Repositories;
@@ -7,7 +8,7 @@ using WebBlog.DAL;
 using WebBlog.DAL.Interfaces;
 using WebBlog.DAL.Models;
 using WebBlog.DAL.Repositories;
-
+using WebBlog.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,7 +33,16 @@ builder.Services.AddDefaultIdentity<BlogUser>(options => options.SignIn.RequireC
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddScoped<UserManager<BlogUser>>();
 
-//роли которае надо добавить администратора, модератора и пользователя
+//Добавляем полититики для  администратора, модератора и пользователя
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RuleOwnerOrAdminOrModerator", policy =>
+       policy.RequireAssertion(context =>
+            context.User.IsInRole("Administrator") ||
+            context.User.HasClaim(c => c.Type == "ArticleOwner" && c.Value == context.GetRouteValue("id"))
+        )
+    );
+});
 
 //изменияем стандартные настройки на попроще
 builder.Services.Configure<IdentityOptions>(options =>
@@ -108,5 +118,6 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 app.Run();
+
 
 public partial class Program { }

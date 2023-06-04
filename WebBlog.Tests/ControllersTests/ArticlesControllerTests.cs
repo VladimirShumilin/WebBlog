@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -19,6 +20,7 @@ namespace WebBlog.Tests.ControllersTests
         private readonly Mock<ITagRepository> _tagRepositoryMock;
         private readonly Mock<ILogger<ArticlesController>> _loggerMock;
         private readonly Mock<IMapper> _mapperMock;
+        private readonly Mock<UserManager<BlogUser>> _userManagerMock;
 
         public ArticlesControllerTests()
         {
@@ -26,6 +28,8 @@ namespace WebBlog.Tests.ControllersTests
             _tagRepositoryMock = new Mock<ITagRepository>();
             _loggerMock = new Mock<ILogger<ArticlesController>>();
             _mapperMock = new Mock<IMapper>();
+            _userManagerMock =  new Mock<UserManager<BlogUser>>(new Mock<IUserStore<BlogUser>>().Object,
+            null, null, null, null, null, null, null, null);
         }
 
         private ArticlesController CreateController()
@@ -34,6 +38,7 @@ namespace WebBlog.Tests.ControllersTests
                 _articleRepositoryMock.Object,
                 _tagRepositoryMock.Object,
                 _loggerMock.Object,
+                _userManagerMock.Object,
                 _mapperMock.Object
             );
         }
@@ -160,10 +165,14 @@ namespace WebBlog.Tests.ControllersTests
             {
                 Title = "Test Article",
                 Tags = new List<TagRequest> { new() { Name = "tag1" }, new() { Name = "tag2" } }
-            };
+            }; 
+            var userId = Guid.NewGuid().ToString();
+            var user = new BlogUser { Id = userId, UserName = "testuser", Email = "testuser@example.com" };
+
             _tagRepositoryMock.Setup(t => t.InsertTagAsync(It.IsAny<Tag>())).Returns(Task.CompletedTask);
             _mapperMock.Setup(mapper => mapper.Map<NewArticleRequest, Article>(newArticleRequest))
-                .Returns(new Article() { Title = "Test Title", Content = "Test Content", ArticleId = Guid.NewGuid() });
+                .Returns(new Article() { Title = "Test Title", Content = "Test Content", ArticleId = Guid.NewGuid() , AuthorId = userId });
+            _userManagerMock.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
 
             // Act
             var result = await controller.Create(newArticleRequest);
@@ -198,20 +207,25 @@ namespace WebBlog.Tests.ControllersTests
         public async Task Create_WithValidRequest_ReturnsOkResult()
         {
             // Arrange
+            var userId = Guid.NewGuid().ToString();
             var newArticleRequest = new NewArticleRequest
             {
+                AuthorId = userId,
                 Title = "Test Title",
                 Content = "Test Content",
                 Tags = new List<TagRequest> { new() { Name = "tag1" }, new() { Name = "tag2" } }
             };
+            
+            var user = new BlogUser { Id = userId, UserName = "testuser", Email = "testuser@example.com" };
 
             _mapperMock.Setup(m => m.Map<NewArticleRequest, Article>(It.IsAny<NewArticleRequest>()))
-                .Returns(new Article() { Title = newArticleRequest.Title, Content = newArticleRequest.Content});
+                .Returns(new Article() { AuthorId = userId, Title = newArticleRequest.Title, Content = newArticleRequest.Content});
 
             _tagRepositoryMock.Setup(t => t.GetByNameAsync(It.IsAny<string>())).ReturnsAsync((Tag?)null);
             _tagRepositoryMock.Setup(t => t.InsertTagAsync(It.IsAny<Tag>())).Returns(Task.CompletedTask);
             _tagRepositoryMock.Setup(t => t.SaveAsync()).Returns(Task.CompletedTask);
-            
+            _userManagerMock.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
+
             var controller = CreateController();
 
             // Act

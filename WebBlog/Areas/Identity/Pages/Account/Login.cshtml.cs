@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using WebBlog.DAL.Models;
+using WebBlog.Extensions;
 
 namespace WebBlog.Areas.Identity.Pages.Account
 {
@@ -115,16 +116,23 @@ namespace WebBlog.Areas.Identity.Pages.Account
                 var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation("User logged in.");
+                    //Здесь по ТЗ надо :
+                    //реализовать логику для аутентификации пользователей.
+                    //Роли пользователя, успешно прошедшего аутентификацию, должны сохраниться в клаймах
+                    //Но в нашей модели слаймы и роли уже привязаны и это просто излишне
+
+
+
+                    _logger.CommonInfo("User logged in.");
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
                 {
-                    return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
+                    return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl,  Input.RememberMe });
                 }
                 if (result.IsLockedOut)
                 {
-                    _logger.LogWarning("User account locked out.");
+                    _logger.CommonWarn("User account locked out.");
                     return RedirectToPage("./Lockout");
                 }
                 else

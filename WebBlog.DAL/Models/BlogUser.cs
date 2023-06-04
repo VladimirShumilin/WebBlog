@@ -16,5 +16,8 @@ namespace WebBlog.DAL.Models
         [Comment("Дополнительный атрибут пользователя")]
         [Column(TypeName = "varchar(100)")]
         public string? CustomField { get; set; }
+
+        public virtual ICollection<IdentityUserClaim<string>> Claims { get; set; } = null!;
+        public virtual ICollection<IdentityUserRole<string>> UserRoles { get; set; } = null!;
     }
 }

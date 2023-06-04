@@ -28,7 +28,11 @@ namespace SamplWebAppEmptyeBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<IEnumerable<Tag>> GetTagsForTheArticleAsync(Guid articleId)
         {
-            return await context.Tag.ToListAsync();
+            if( await context.Article.Include(t=>t.Tags)
+                .FirstOrDefaultAsync(a=>a.ArticleId == articleId) is Article art)
+                return art.Tags;
+
+            return new List<Tag>();
         }
         
         /// <summary>

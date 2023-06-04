@@ -26,8 +26,10 @@ namespace WebBlog
             CreateMap<NewArticleRequest, Article>();
 
             CreateMap<UserViewModel, BlogUser>();
-            CreateMap<BlogUser, UserViewModel>();
-        
+            CreateMap<BlogUser, UserViewModel>()
+                .ForMember(dest => dest.UserRoles, opt => opt.MapFrom(src => src.UserRoles.Select(x => x).ToList()));
+           
+     
             CreateMap<CommentViewModel, Comment>();
             CreateMap<TagViewModel,Tag >();
 
@@ -47,7 +49,12 @@ namespace WebBlog
 
             CreateMap<NewRoleRequest, IdentityRole>();
             CreateMap<EditRoleRequest, IdentityRole>();
+
+            //CreateMap<IdentityRole, string>().
+            //    ForMember(dest => dest, opt => opt.MapFrom(src => src.Name));
+
             
+
         }
     }
 }

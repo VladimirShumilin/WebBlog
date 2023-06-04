@@ -13,6 +13,7 @@ namespace WebBlog.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [Authorize] // Защита контроллера от доступа неавторизованных пользователей
     public class CommentsController : Controller
     {
       
