@@ -1,31 +1,40 @@
 ﻿using AutoMapper;
+using Azure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Globalization;
+using WebBlog.BLL.Services;
+using WebBlog.BLL.Services.Interfaces;
 using WebBlog.Contracts.Models.Query.User;
+using WebBlog.Contracts.Models.Request.Tag;
 using WebBlog.Contracts.Models.Request.User;
+using WebBlog.Contracts.Models.Responce.Tag;
 using WebBlog.DAL.Models;
 using WebBlog.Extensions;
 
 namespace WebBlog.Controllers
 {
-    [ApiController]
+ 
     [Route("[controller]")]
     [Authorize(Roles = "Administrator")]
-    public class UserController : ControllerBase
+    public class UsersController : Controller
     {
         private readonly UserManager<BlogUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly ILogger<UserController> _logger;
+        private readonly RoleManager<BlogRole> _roleManager;
+        private readonly ILogger<UsersController> _logger;
         private readonly IMapper _mapper;
-        public UserController(UserManager<BlogUser> userManager, RoleManager<IdentityRole> roleManager
-            , IMapper mapper, ILogger<UserController> logger)
+        private readonly IUserService _userService;
+        public UsersController(UserManager<BlogUser> userManager, RoleManager<BlogRole> roleManager
+            , IMapper mapper, ILogger<UsersController> logger, IUserService userService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _mapper = mapper;
             _logger = logger;
+            _userService = userService;
         }
 
         /// <summary>
@@ -54,11 +63,26 @@ namespace WebBlog.Controllers
         }
 
         /// <summary>
+        ///  GET: Users/Edit/5
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("Delete/{id}")]
+        public async Task<IActionResult> Delete(string id)
+        {
+            var user = await _userService.GetUserEditViewModelAsync(id);
+
+            if (user == null)
+                return NotFound();
+
+            return View(user);
+        }
+        /// <summary>
         /// Удаляет пользователя
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpDelete("{id}")]
+        [HttpPost("Delete/{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -72,7 +96,7 @@ namespace WebBlog.Controllers
 
             if (result.Succeeded)
             {
-                return Ok();
+                return RedirectToAction("Index");
             }
 
             return BadRequest(result.Errors);
@@ -83,24 +107,13 @@ namespace WebBlog.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> Index()
         {
             try
             {
-                if (await _userManager.Users
-                    .Include(u=>u.UserRoles)
-                    .Include(u=>u.Claims).ToListAsync() is IEnumerable<BlogUser> users)
-                {
-                    List<UserViewModel> userView = _mapper.Map<BlogUser[], List<UserViewModel>>(users.ToArray());
-                    //foreach (var user in users)
-                    //{
-                    //    if (await _userManager.GetRolesAsync(user) is List<string> roles)
-                    //    {
-                    //        ;
-                    //    }
-                    //}
-                    return Ok(userView.ToList());
-                }
+                if (await _userService.GetUsersViewModelAsync() is IEnumerable<UserViewModel> usersView)
+                    return View(usersView);
+                
 
                 _logger.CommonError(null, "_userManager.Users.ToListAsync() is not IEnumerable<BlogUser>");
                 return Problem("Internal server error", "", 500);
@@ -117,17 +130,16 @@ namespace WebBlog.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser(string id)
+        [HttpGet("Edit/{id}")]
+        public async Task<IActionResult> Edit(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await _userService.GetUserEditViewModelAsync(id);
 
             if (user == null)
-            {
                 return NotFound();
-            }
+            
 
-            return Ok(user);
+            return View(user);
         }
 
         /// <summary>
@@ -136,32 +148,27 @@ namespace WebBlog.Controllers
         /// <param name="id"></param>
         /// <param name="model"></param>
         /// <returns></returns>
-#if !SWAGGER
+
         [ValidateAntiForgeryToken] 
-#endif
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserRequest model)
+        [HttpPost("Edit/{id}")]
+        public async Task<IActionResult> Edit(string id, [Bind("Id,Email,NewPassword,FirstName,LastName,UserRoles")] EditUserViewModel model)
         {
-            var user = await _userManager.FindByIdAsync(id);
-
-            if (user == null)
-            {
+            if (id != model.Id)
                 return NotFound();
-            }
 
-            user.UserName = model.UserName;
-            user.Email = model.Email;
-            user.CustomField = model.CustomField;
-            user.PhoneNumber= model.PhoneNumber;
-
-            var result = await _userManager.UpdateAsync(user);
-
-            if (result.Succeeded)
+            if (ModelState.IsValid)
             {
-                return Ok();
+                
+                if (await _userService.UpdateUser(model)  is IdentityResult result)
+                {
+                    if (result.Succeeded)
+                    {
+                        var viewModel = await _userService.GetUserViewModelAsync(model.Id);
+                        return View("Details", viewModel);
+                    }
+                }
             }
-
-            return BadRequest(result.Errors);
+            return View(model);
         }
 
         /// <summary>

@@ -20,10 +20,18 @@ namespace SamplWebAppEmptyeBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<IEnumerable<Tag>> GetTagsAsync()
         {
-            return await context.Tag.ToListAsync();
+            return await context.Tag.AsNoTracking().ToListAsync();
         }
         /// <summary>
-        /// Возвращает массив всех имеющихся тегов
+        ///  возвращает все теги с списком статей в которых они применялись
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<Tag>> GetTagsIncludeArticles()
+        {
+            return await context.Tag.Include(x=>x.Articles).AsNoTracking().ToListAsync();
+        }
+        /// <summary>
+        /// Возвращает массив всех имеющихся тегов для статьи
         /// </summary>
         /// <returns></returns>
         public async Task<IEnumerable<Tag>> GetTagsForTheArticleAsync(Guid articleId)
@@ -51,7 +59,16 @@ namespace SamplWebAppEmptyeBlog.DAL.Repositories
         /// <returns></returns>
         public async Task<bool> TagExistsAsync(Guid tagId)
         {
-            return await context.Tag.AnyAsync(e => e.TagId == tagId);
+            return await context.Tag.AsNoTracking().AnyAsync(e => e.TagId == tagId);
+        }
+        /// <summary>
+        /// возвращает true если есть тег с таким  ИД
+        /// </summary>
+        /// <param name="tagId"></param>
+        /// <returns></returns>
+        public async Task<bool> TagExistsAsync(string tagName)
+        {
+            return await context.Tag.AsNoTracking().AnyAsync(e => e.Name == tagName);
         }
         /// <summary>
         /// возвращает тег для указанного ИД

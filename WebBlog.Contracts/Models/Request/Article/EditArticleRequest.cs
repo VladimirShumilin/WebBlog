@@ -31,9 +31,9 @@ namespace WebBlog.Contracts.Models.Request.Article
         public DateTime Created { get; set; }
 
         [Required]
-        public UserViewModel Author { get; set; } = null!;
+        public string AuthorId { get; set; } = null!;
 
-        public virtual ICollection<CommentViewModel> Comments { get; set; } = null!;
-        public virtual ICollection<TagViewModel> Tags { get; set; } = null!;
+       // public virtual List<CommentViewModel> Comments { get; set; } = null!;
+        public virtual List<TagViewModel> Tags { get; set; } = null!;
     }
 }

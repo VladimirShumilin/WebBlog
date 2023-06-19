@@ -59,10 +59,24 @@ namespace WebBlog.DAL.Repositories
         {
             return await context.Article.AsNoTracking()
                 .Include(a => a.Tags)
-                .Include(a=>a.Comments)
                 .Include(a=>a.Author)
+                .Include(a=>a.Comments)
+                .ThenInclude(a=>a.Author)
                 .FirstOrDefaultAsync(t => t.ArticleId == articleId);
         }
+        public async Task<bool> IncCountOfViewsAsync(Guid articleId)
+        {
+            if(context.Article.FirstOrDefault(x=>x.ArticleId == articleId) is Article a)
+            {
+                a.ViewsCount++;
+                context.Article.Update(a);
+                await context.SaveChangesAsync();
+                return true;
+            }
+
+            return false;
+        }
+        
         /// <summary>
         /// Добавляет статью 
         /// </summary>

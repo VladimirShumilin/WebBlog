@@ -10,14 +10,14 @@ namespace WebBlog.Tests.ControllersTests
 {
     public class RoleControllerTests
     {
-        private readonly Mock<RoleManager<IdentityRole>> _roleManagerMock;
+        private readonly Mock<RoleManager<BlogRole>> _roleManagerMock;
         private readonly IMapper _mapperMock;
-        private readonly RoleController _controller;
+        private readonly RolesController _controller;
 
         public RoleControllerTests()
         {
-            _roleManagerMock = new Mock<RoleManager<IdentityRole>>(
-                new Mock<IRoleStore<IdentityRole>>().Object,
+            _roleManagerMock = new Mock<RoleManager<BlogRole>>(
+                new Mock<IRoleStore<BlogRole>>().Object,
                 null, null, null, null);
 
             var config = new MapperConfiguration(cfg =>
@@ -26,23 +26,23 @@ namespace WebBlog.Tests.ControllersTests
             });
             _mapperMock = config.CreateMapper();
 
-            _controller = new RoleController(_roleManagerMock.Object, _mapperMock);
+            _controller = new RolesController(_roleManagerMock.Object, _mapperMock);
         }
 
         [Fact]
         public async Task GetRole_WithValidId_ReturnsRole()
         {
             // Arrange
-            var roleId = "1";
-            var role = new IdentityRole { Id = roleId, Name = "Admin" };
-            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync(role);
+            var roleId = Guid.NewGuid();
+            var role = new BlogRole { Id = roleId, Name = "Admin" };
+            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId.ToString())).ReturnsAsync(role);
 
             // Act
-            var result = await _controller.GetRole(roleId);
+            var result = await _controller.GetRole(roleId.ToString());
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var returnedRole = Assert.IsType<IdentityRole>(okResult.Value);
+            var returnedRole = Assert.IsType<BlogRole>(okResult.Value);
             Assert.Equal(role, returnedRole);
         }
 
@@ -63,11 +63,11 @@ namespace WebBlog.Tests.ControllersTests
         public async Task EditRole_WithValidRequest_ReturnsOk()
         {
             // Arrange
-            var roleId = "1";
+            var roleId = Guid.NewGuid();
             var roleName = "NewAdmin";
-            var request = new EditRoleRequest { Id = roleId, Name = roleName };
-            var role = new IdentityRole { Id = roleId, Name = "Admin" };
-            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync(role);
+            var request = new EditRoleRequest { Id = roleId.ToString(), Name = roleName };
+            var role = new BlogRole { Id = roleId, Name = "Admin" };
+            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId.ToString())).ReturnsAsync(role);
 
             // Act
             var result = await _controller.EditRole(request);
@@ -96,7 +96,7 @@ namespace WebBlog.Tests.ControllersTests
             var roleId = "";
             var roleName = "NewAdmin";
             var request = new EditRoleRequest { Id = roleId, Name = roleName };
-            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync((IdentityRole?)null);
+            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync((BlogRole?)null);
             // Act
             var result = await _controller.EditRole(request);
 
@@ -111,7 +111,7 @@ namespace WebBlog.Tests.ControllersTests
             var roleId = "1";
             var roleName = "NewAdmin";
             var request = new EditRoleRequest { Id = roleId, Name = roleName };
-            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync((IdentityRole?)null);
+            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync((BlogRole?)null);
 
             // Act
             var result = await _controller.EditRole(request);
@@ -125,12 +125,12 @@ namespace WebBlog.Tests.ControllersTests
         public async Task DeleteRole_WithValidId_ReturnsOk()
         {
             // Arrange
-            var roleId = "1";
-            var role = new IdentityRole { Id = roleId, Name = "Admin" };
-            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync(role);
+            var roleId = Guid.NewGuid();
+            var role = new BlogRole { Id = roleId, Name = "Admin" };
+            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId.ToString())).ReturnsAsync(role);
 
             // Act
-            var result = await _controller.DeleteRole(roleId);
+            var result = await _controller.DeleteRole(roleId.ToString());
 
             // Assert
             var okResult = Assert.IsType<OkResult>(result);
@@ -154,7 +154,7 @@ namespace WebBlog.Tests.ControllersTests
         {
             // Arrange
             var roleId = "1";
-            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync((IdentityRole?)null);
+            _roleManagerMock.Setup(x => x.FindByIdAsync(roleId)).ReturnsAsync((BlogRole?)null);
 
             // Act
             var result = await _controller.DeleteRole(roleId);

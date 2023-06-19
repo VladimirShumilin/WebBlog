@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WebBlog.DAL.Models
 {
@@ -11,11 +12,13 @@ namespace WebBlog.DAL.Models
     {
         [Required]
         [Comment("Внешний ключ связи с таблицей Articles")]
+        [ForeignKey("Article")]
         public Guid ArticleId { get; set; }
+        public Article Post { get; set; } = null!;
         [Required]
         [Comment("Внешний ключ связи с таблицей Tags")]
+        [ForeignKey("Tag")]
         public Guid TagId { get; set; }
-        public Article Post { get; set; } = null!;
         public Tag Tag { get; set; } = null!;
     }
 }

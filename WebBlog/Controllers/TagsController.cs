@@ -1,8 +1,12 @@
 ﻿using AutoMapper;
+using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Xml.Linq;
+using WebBlog.BLL.Services.Interfaces;
 using WebBlog.Contracts.Models.Request.Tag;
 using WebBlog.Contracts.Models.Responce.Comment;
 using WebBlog.Contracts.Models.Responce.Tag;
@@ -13,25 +17,44 @@ using WebBlog.Extensions;
 
 namespace WebBlog.Controllers
 {
-    [ApiController]
     [Route("[controller]")]
     [Authorize] // Защита контроллера от доступа неавторизованных пользователей
     public class TagsController : Controller
     {
       
         private readonly IMapper _mapper;
-        private readonly ITagRepository _TagRepository;
+        private readonly ITagService _tagService;
         private readonly ILogger<TagsController> _logger;
 
-        public TagsController(ITagRepository TagRepository, ILogger<TagsController> logger
+
+        public TagsController(ITagService tagService, ILogger<TagsController> logger
             , IMapper mapper)
         {
-            _TagRepository = TagRepository;
+            _tagService = tagService;
             _logger = logger;
             _mapper = mapper;
         }
+        /// <summary>
+        /// Метод вызываемый по умолчанию
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<IActionResult> Index()
+        {
 
-        
+            try
+            {
+                var Tags = await _tagService.GetTagsAsync();
+                var viewModel = _mapper.Map<Tag[], List<TagViewModel>>(Tags.ToArray());
+                return View("Index", viewModel);
+            }catch(Exception ex)
+            {
+                _logger.CommonError(ex, "Error in GetTags method");
+                return StatusCode(500, "Internal server error");
+
+            }
+        }
+
         /// <summary>
         /// возвращает все коментарии
         /// </summary>
@@ -41,7 +64,7 @@ namespace WebBlog.Controllers
         {
             try
             {
-                var Tags = await _TagRepository.GetTagsAsync();
+                var Tags = await _tagService.GetTagsAsync();
                 var viewModel = _mapper.Map<Tag[], List<TagViewModel>>(Tags.ToArray());
                 return Ok(viewModel);
             }
@@ -62,7 +85,7 @@ namespace WebBlog.Controllers
         {
             try
             {
-                var Tag = await _TagRepository.GetTagByIDAsync(id);
+                var Tag = await _tagService.GetTagByIDAsync(id);
 
                 if (Tag == null)
                 {
@@ -70,13 +93,23 @@ namespace WebBlog.Controllers
                 }
 
                 var viewModel = _mapper.Map<Tag, TagViewModel>(Tag);
-                return Ok(viewModel);
+                return View(viewModel);
             }
             catch (Exception ex)
             {
                 _logger.CommonError(ex, "Error in Details method");
                 return StatusCode(500, "Internal server error");
             }
+        }
+
+        /// <summary>
+        /// Возвращает представление для создания нового тега
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Create")]
+        public IActionResult Create()
+        {
+            return View();
         }
 
         /// <summary>
@@ -85,29 +118,29 @@ namespace WebBlog.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("Create")]
-#if !SWAGGER
         [ValidateAntiForgeryToken] 
-#endif
-        public async Task<ActionResult<TagViewModel>> CreateTag([FromBody] NewTagRequest request)
+        public async Task<ActionResult<TagViewModel>> CreateTag([Bind("Name")] NewTagRequest request)
         {
             if (request == null)
-            {
-                return BadRequest("Tag is null");
-            }
+                return RedirectToAction("Error", "Home", new { message = "Tag is null" });
+
+            
 
             try
             {
                 if (ModelState.IsValid)
                 {
-                    var Tag = _mapper.Map<NewTagRequest, Tag>(request);
-                    if(Tag is null)
-                        return BadRequest();
-
-                    await _TagRepository.InsertTagAsync(Tag);
-                    await _TagRepository.SaveAsync();
-                    return CreatedAtAction(nameof(Details), new { id = Tag.TagId }, Tag);
+                    if (await _tagService.InsertTagAsync(request) is Tag tag)
+                    {
+                        var viewModel = _mapper.Map<Tag, TagViewModel>(tag);
+                        return RedirectToAction(nameof(Index));
+                    }
                 }
                 return BadRequest();
+            }
+            catch (ArgumentException ex)
+            {
+                return RedirectToAction("Error", "Home", new { message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -117,80 +150,108 @@ namespace WebBlog.Controllers
         }
 
         /// <summary>
+        ///  GET: Tags/Edit/5
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("Edit/{id}")]
+        public async Task<IActionResult> Edit(Guid? id)
+        {
+            if (id == null )
+            {
+                return NotFound();
+            }
+
+            if (await _tagService.GetTagByIDAsync((Guid)id) is Tag tag)
+            {
+                var viewModel = _mapper.Map<Tag, EditTagRequest>(tag);
+                return View(viewModel);
+            }
+            return NotFound();
+        }
+
+        /// <summary>
         /// Обновляет информцию переданного коментария
         /// </summary>
         /// <param name="id"></param>
         /// <param name="Tag"></param>
         /// <returns></returns>
-        [HttpPut("Edit/{id}")]
-#if !SWAGGER
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken] 
-#endif
-        public async Task<IActionResult> UpdateTag(Guid id, [FromBody] EditTagRequest request)
+        public async Task<IActionResult> Edit(Guid id, [Bind("TagId,Name")] EditTagRequest request)
         {
             if (id != request.TagId)
-            {
                 return BadRequest("Tag ID mismatch");
-            }
-
+            
             try
             {
                 if (ModelState.IsValid)
                 {
-                    var Tag = _mapper.Map<EditTagRequest, Tag>(request);
-                    if (!await _TagRepository.TagExistsAsync(id))
+
+                    if (await _tagService.UpdateTagAsync(request) is Tag tag)
                     {
-                        return NotFound();
+                        var viewModel = _mapper.Map<Tag, TagViewModel>(tag);
+                        return View("Details", viewModel);
                     }
-
-                    bool isUpdated = _TagRepository.UpdateTag(Tag);
-
-                    if (!isUpdated)
-                    {
-                        return BadRequest("Update failed");
-                    }
-
-                    await _TagRepository.SaveAsync();
-                    return NoContent();
                 }
                 return BadRequest();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.CommonError(ex, "Error in UpdateTag method");
                 return StatusCode(500, "Internal server error");
             }
+
         }
 
         /// <summary>
-        /// Удаляет комментарий
+        /// GET: Tags/Delete/5
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpDelete("Delete{id}")]
-#if !SWAGGER
-        [ValidateAntiForgeryToken] 
-#endif
-        public async Task<IActionResult> DeleteTag(Guid id)
+        [HttpGet("Delete/{id}")]
+        public async Task<IActionResult> Delete(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            if (await _tagService.GetTagByIDAsync((Guid)id) is Tag tag)
+            {
+                var viewModel = _mapper.Map<Tag, TagViewModel>(tag);
+                return View(viewModel);
+            }
+            return NotFound();
+        }
+
+        /// <summary>
+        /// Удаляет тег
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost("Delete/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             try
             {
-                var Tag = await _TagRepository.GetTagByIDAsync(id);
+                if (await _tagService.DeleteTagAsync(id))
+                    return RedirectToAction(nameof(Index));
 
-                if (Tag == null)
-                {
-                    return NotFound();
-                }
-
-                await _TagRepository.DeleteTagAsync(id);
-                await _TagRepository.SaveAsync();
-                return NoContent();
+                return Problem($"Не удалось удалить тег {id}");
             }
             catch (Exception ex)
             {
                 _logger.CommonError(ex, "Error in DeleteTag method");
                 return StatusCode(500, "Internal server error");
             }
+
+           
         }
     }
 }

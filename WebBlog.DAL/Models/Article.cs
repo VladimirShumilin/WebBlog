@@ -22,6 +22,9 @@ namespace WebBlog.DAL.Models
         [Comment("Дата создания")]
         public DateTime Created { get; set; }
 
+        [Comment("Количество просмотров")]
+        public long ViewsCount { get; set; } = new();
+
         [Required]
         [Column(TypeName = "varchar(450)")]
         [ForeignKey(nameof(Author))]
@@ -31,5 +34,6 @@ namespace WebBlog.DAL.Models
 
         public virtual ICollection<Comment> Comments { get; set; } = null!;
         public virtual ICollection<Tag> Tags { get; set; } = null!;
+  
     }
 }

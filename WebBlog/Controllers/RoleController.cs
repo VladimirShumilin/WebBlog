@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebBlog.Contracts.Models.Request.Role;
+using WebBlog.Contracts.Models.Responce.Role;
+using WebBlog.Contracts.Models.Responce.Tag;
 using WebBlog.DAL.Models;
 
 namespace WebBlog.Controllers
@@ -11,15 +13,14 @@ namespace WebBlog.Controllers
     /// <summary>
     /// Контроллер для управления ролями пользователей
     /// </summary>
-    [ApiController]
     [Route("[controller]")]
     [Authorize(Roles = "Administrator")]
-    public class RoleController : Controller
+    public class RolesController : Controller
     {
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly RoleManager<BlogRole> _roleManager;
         private readonly IMapper _mapper;
 
-        public RoleController(RoleManager<IdentityRole> roleManager, IMapper mapper)
+        public RolesController(RoleManager<BlogRole> roleManager, IMapper mapper)
         {
             _roleManager = roleManager;
             _mapper = mapper;
@@ -30,39 +31,49 @@ namespace WebBlog.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public async Task<IEnumerable<IdentityRole>> GetRoles()
+        public async Task<IActionResult> Index()
         {
             var roles = await _roleManager.Roles.ToListAsync(CancellationToken.None);
-            return roles;
+            var models = _mapper.Map<BlogRole[], List<RoleViewModel>>(roles.ToArray()); 
+            return View(models);                
         }
         /// <summary>
         /// Возвращает роль по Id
         /// </summary>
         /// <returns></returns>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetRole(string id)
+        [HttpGet("Details/{id}")]
+        public async Task<IActionResult> Details(string id)
         {
             if (string.IsNullOrEmpty(id))
                 return BadRequest();
 
-            if (await _roleManager.FindByIdAsync(id) is IdentityRole role)
-                return Ok(role);
+            if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+            {
+                var model = _mapper.Map<BlogRole, RoleViewModel>(role);
+                return View(model);
+            }
             
-            return BadRequest($"Role Id:{id} not found");
+            return Problem($"Role Id:{id} not found");
         }
 
+        [HttpGet("Create")]
+        public IActionResult Create()
+        {
+            return View();
+        }
         /// <summary>
         /// Добавление роли
         /// </summary>   
-        [HttpPost]
-        public async Task<IActionResult> CreateRole([FromBody] NewRoleRequest request)
+        [HttpPost("Create")]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult<TagViewModel>> CreateRole([Bind("Name,Description")]  NewRoleRequest request)
         {
             if (ModelState.IsValid)
             {
-                var role = _mapper.Map<NewRoleRequest, IdentityRole>(request);
+                var role = _mapper.Map<NewRoleRequest, BlogRole>(request);
                 var result = await _roleManager.CreateAsync(role);
                 if (result.Succeeded)
-                    return Ok();
+                    return View("Create",request);
                 else
                     return BadRequest(result.Errors.ToArray());
             }
@@ -70,18 +81,41 @@ namespace WebBlog.Controllers
         }
 
         /// <summary>
+        /// GET: NewRoleRequests/Edit/5
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("Edit/{id}")]
+        public async Task<IActionResult> Edit(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return BadRequest();
+
+            if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+            {
+                var model = _mapper.Map<BlogRole, EditRoleRequest>(role);
+                return View(model);
+            }
+
+            return Problem($"Role Id:{id} not found");
+        }
+        /// <summary>
         /// Редактирование роли
         /// </summary>    
-        [HttpPut("{id}")]
-        public async Task<IActionResult> EditRole([FromBody] EditRoleRequest request)
+        [HttpPost("Edit/{id}")]
+        public async Task<IActionResult> EditRole([Bind("Id,Name,Description")] EditRoleRequest request)
         {
 
             if (ModelState.IsValid)
             {
-                if (await _roleManager.FindByIdAsync(request.Id) is IdentityRole role)
+                //var newRole = _mapper.Map<EditRoleRequest, BlogRole>(request);
+
+                if (await _roleManager.FindByIdAsync(request.Id) is BlogRole role)
                 {
-                    await _roleManager.UpdateAsync(role);
-                    return Ok();
+                    role.Name = request.Name;
+                    role.Description = request.Description;
+                    var result = await _roleManager.UpdateAsync(role);
+                    return RedirectToAction(nameof(Index));
                 }
                 return BadRequest($"Role Id:{request.Id} not found");
             }
@@ -89,18 +123,39 @@ namespace WebBlog.Controllers
         }
 
         /// <summary>
-        /// Удаление роли
-        /// </summary>       
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteRole(string id)
+        /// GET: NewRoleRequests/Delete/5
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("Delete/{id}")]
+        public async Task<IActionResult> Delete(string id)
         {
             if (string.IsNullOrEmpty(id))
                 return BadRequest();
 
-            if (await _roleManager.FindByIdAsync(id) is IdentityRole role)
+            if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+            {
+                var model = _mapper.Map<BlogRole, RoleViewModel>(role);
+                return View(model);
+            }
+
+            return Problem($"Role Id:{id} not found");
+        }
+
+        /// <summary>
+        /// Удаление роли
+        /// </summary>       
+        [HttpPost("Delete/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return BadRequest();
+
+            if (await _roleManager.FindByIdAsync(id) is BlogRole role)
             {
                 await _roleManager.DeleteAsync(role);
-                return Ok();
+                return RedirectToAction(nameof(Index));
             }
             return BadRequest($"Role Id:{id} not found");
         }

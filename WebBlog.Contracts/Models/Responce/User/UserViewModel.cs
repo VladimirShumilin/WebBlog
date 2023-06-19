@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using WebBlog.Contracts.Models.Responce.Role;
 
 namespace WebBlog.Contracts.Models.Query.User
 {
@@ -9,13 +10,14 @@ namespace WebBlog.Contracts.Models.Query.User
     {
         [Required]
         public string Id { get; set; } = null!;
-        [Required]
+        [Required,Display(Name ="Почта")]
         public string Email { get; set; } = null!;
-        [Required]
+        [Required, Display(Name = "Псевдоним")]
         public string UserName { get; set; } = null!;
-        [Required]
-        public string Password { get; set; } = null!;
-        public string CustomField { get; set; } = null!;
-        public List<string> UserRoles { get; set; } = null!;
+        [Required, Display(Name = "Имя")]
+        public string FirstName { get; set; } = null!;
+        [Required, Display(Name = "Пароль")]
+        public string LastName { get; set; } = null!;
+        public List<RoleSelectViewModel> Roles { get; set; } = null!;
     }
 }
