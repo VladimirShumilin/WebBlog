@@ -19,6 +19,7 @@ using WebBlog.Extensions;
 
 namespace WebBlog.Areas.Identity.Pages.Account
 {
+    [AllowAnonymous]
     public class LoginModel : PageModel
     {
         private readonly SignInManager<BlogUser> _signInManager;
@@ -111,15 +112,21 @@ namespace WebBlog.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+                var user = await _signInManager.UserManager.FindByEmailAsync(Input.Email);
+                if (user == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    return Page();
+                }
+                    // This doesn't count login failures towards account lockout
+                    // To enable password failures to trigger account lockout, set lockoutOnFailure: true
+                var result = await _signInManager.PasswordSignInAsync(user, Input.Password, Input.RememberMe, lockoutOnFailure: false);
                 if (result.Succeeded)
                 {
                     //Здесь по ТЗ надо :
                     //реализовать логику для аутентификации пользователей.
                     //Роли пользователя, успешно прошедшего аутентификацию, должны сохраниться в клаймах
-                    //Но в нашей модели слаймы и роли уже привязаны и это просто излишне
+                    //Но в нашей модели клаймы и роли уже привязаны и это просто излишне
 
 
 

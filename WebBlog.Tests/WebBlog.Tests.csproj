@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WebBlog.BLL\WebBlog.BLL.csproj" />
     <ProjectReference Include="..\WebBlog.Contracts\WebBlog.Contracts.csproj" />
     <ProjectReference Include="..\WebBlog.DAL\WebBlog.DAL.csproj" />
     <ProjectReference Include="..\WebBlog\WebBlog.csproj" />

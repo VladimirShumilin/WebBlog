@@ -1,17 +1,18 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Xml.Linq;
+using WebBlog.Contracts.Models.Request.Article;
 using WebBlog.Contracts.Models.Request.Comment;
-using WebBlog.Contracts.Models.Responce.Article;
 using WebBlog.Contracts.Models.Responce.Comment;
+using WebBlog.Contracts.Models.Responce.Tag;
 using WebBlog.DAL.Interfaces;
 using WebBlog.DAL.Models;
 using WebBlog.Extensions;
 
 namespace WebBlog.Controllers
 {
-    [ApiController]
+    
     [Route("[controller]")]
     [Authorize] // Защита контроллера от доступа неавторизованных пользователей
     public class CommentsController : Controller
@@ -20,15 +21,21 @@ namespace WebBlog.Controllers
         private readonly IMapper _mapper;
         private readonly ICommentRepository _commentRepository;
         private readonly ILogger<CommentsController> _logger;
+        private readonly UserManager<BlogUser> _userManager;
 
         public CommentsController(ICommentRepository commentRepository, ILogger<CommentsController> logger
-            , IMapper mapper)
+            , IMapper mapper, UserManager<BlogUser> userManager)
         {
             _commentRepository = commentRepository;
             _logger = logger;
             _mapper = mapper;
+            _userManager = userManager;
         }
-
+        [HttpGet]
+        public IActionResult Index()
+        {
+            return View();
+        }
         /// <summary>
         /// возвращает все коментарии
         /// </summary>
@@ -102,10 +109,7 @@ namespace WebBlog.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("Create")]
-#if !SWAGGER
-        [ValidateAntiForgeryToken] 
-#endif
-        public async Task<ActionResult<CommentViewModel>> CreateComment([FromBody] NewCommentRequest request)
+        public async Task<ActionResult<CommentViewModel>> Create([Bind("ArticleId,Content")] NewCommentRequest request)
         {
             if (request == null)
             {
@@ -117,12 +121,20 @@ namespace WebBlog.Controllers
                 if (ModelState.IsValid)
                 {
                     var comment = _mapper.Map<NewCommentRequest, Comment>(request);
-                    if(comment is null)
+                    if (comment is null)
                         return BadRequest();
 
-                    await _commentRepository.InsertCommentAsync(comment);
-                    await _commentRepository.SaveAsync();
-                    return CreatedAtAction(nameof(Details), new { id = comment.CommentId }, comment);
+                    //передаем в теле Id пользователя для которого будет создана статья
+                    if (await _userManager.GetUserAsync(HttpContext.User) is BlogUser user)
+                    {
+                        comment.Title = "";
+                        comment.Author = user;
+                        comment.AuthorID = user.Id;
+
+                        await _commentRepository.InsertCommentAsync(comment);
+                        await _commentRepository.SaveAsync();
+                        return RedirectToAction("Details", "Articles", new { id = request.ArticleId.ToString() });
+                    }
                 }
                 return BadRequest();
             }
@@ -134,41 +146,56 @@ namespace WebBlog.Controllers
         }
 
         /// <summary>
+        /// Возвращает страницу с коментарием по Id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("Edit/{id}")]
+        public async Task<ActionResult<CommentViewModel>> Edit(Guid id)
+        {
+            try
+            {
+                var comment = await _commentRepository.GetCommentByIDAsync(id);
+
+                if (comment == null)
+                {
+                    return NotFound();
+                }
+
+                var viewModel = _mapper.Map<Comment, CommentViewModel>(comment);
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in GetComment method");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+        /// <summary>
         /// Обновляет информцию переданного коментария
         /// </summary>
         /// <param name="id"></param>
         /// <param name="comment"></param>
         /// <returns></returns>
-        [HttpPut("Edit/{id}")]
-#if !SWAGGER
-        [ValidateAntiForgeryToken] 
-#endif
-        public async Task<IActionResult> UpdateComment(Guid id, [FromBody] EditCommentRequest request)
+        [HttpPost("Edit")]
+        [Authorize(Policy = "RuleAdministratorOrModerator")]
+        public async Task<IActionResult> UpdateComment([Bind("CommentId,ArticleId,Content")] EditCommentRequest request)
         {
-            if (id != request.CommentId)
-            {
-                return BadRequest("Comment ID mismatch");
-            }
 
             try
             {
                 if (ModelState.IsValid)
                 {
-                    var comment = _mapper.Map<EditCommentRequest, Comment>(request);
-                    if (!await _commentRepository.CommentExistsAsync(id))
+                    if (await _commentRepository.GetCommentByIDAsync(request.CommentId) is Comment comment)
                     {
-                        return NotFound();
-                    }
-
-                    bool isUpdated = _commentRepository.UpdateComment(comment);
-
-                    if (!isUpdated)
-                    {
+                        comment.Content = request.Content;
+                        if (_commentRepository.UpdateComment(comment))
+                        {
+                            await _commentRepository.SaveAsync();
+                            return RedirectToAction("Index", "Articles");
+                        }
                         return BadRequest("Update failed");
                     }
-
-                    await _commentRepository.SaveAsync();
-                    return NoContent();
                 }
                 return BadRequest();
             }
@@ -180,16 +207,43 @@ namespace WebBlog.Controllers
         }
 
         /// <summary>
+        /// GET: Comment/Delete/5
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("Delete/{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            try
+            {
+                var comment = await _commentRepository.GetCommentByIDAsync(id);
+
+                if (comment == null)
+                {
+                    return NotFound();
+                }
+
+                var viewModel = _mapper.Map<Comment, CommentViewModel>(comment);
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in GetComment method");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        /// <summary>
         /// Удаляет комментарий
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpDelete("Delete{id}")]
+        [HttpPost("Delete/{id}")]
 #if !SWAGGER
-        [ValidateAntiForgeryToken] 
-        [Authorize(Roles = "Administrator")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = "RuleAdministratorOrModerator")]
 #endif
-        
+
         public async Task<IActionResult> DeleteComment(Guid id)
         {
             try
@@ -203,7 +257,9 @@ namespace WebBlog.Controllers
 
                 await _commentRepository.DeleteCommentAsync(id);
                 await _commentRepository.SaveAsync();
-                return NoContent();
+
+                return RedirectToAction("Index", "Articles");
+
             }
             catch (Exception ex)
             {

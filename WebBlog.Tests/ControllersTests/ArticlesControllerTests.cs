@@ -1,4 +1,5 @@
 using AutoMapper;
+using BlogWebApp.BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -16,7 +17,7 @@ namespace WebBlog.Tests.ControllersTests
 {
     public class ArticlesControllerTests
     {
-        private readonly Mock<IArticleRepository> _articleRepositoryMock;
+        private readonly Mock<IArticleService> _articleRepositoryMock;
         private readonly Mock<ITagRepository> _tagRepositoryMock;
         private readonly Mock<ILogger<ArticlesController>> _loggerMock;
         private readonly Mock<IMapper> _mapperMock;
@@ -24,7 +25,7 @@ namespace WebBlog.Tests.ControllersTests
 
         public ArticlesControllerTests()
         {
-            _articleRepositoryMock = new Mock<IArticleRepository>();
+            _articleRepositoryMock = new Mock<IArticleService>();
             _tagRepositoryMock = new Mock<ITagRepository>();
             _loggerMock = new Mock<ILogger<ArticlesController>>();
             _mapperMock = new Mock<IMapper>();

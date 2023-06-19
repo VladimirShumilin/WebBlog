@@ -4,16 +4,20 @@ using Microsoft.EntityFrameworkCore;
 using SamplWebAppEmptyeBlog.DAL.Repositories;
 using System.Reflection;
 using WebBlog;
+using WebBlog.BLL.Services;
+using WebBlog.BLL.Services.Interfaces;
 using WebBlog.DAL;
 using WebBlog.DAL.Interfaces;
 using WebBlog.DAL.Models;
 using WebBlog.DAL.Repositories;
 using WebBlog.Extensions;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 //добавить контекст БД
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
@@ -29,20 +33,40 @@ builder.Services.AddScoped<ITagRepository, TagRepository>();
 // подключаем набор служб удостоверений . по умолчанию также будут добавлены пользоваетельские формы
 //и настроена проверка подлинности для использования cookie
 builder.Services.AddDefaultIdentity<BlogUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()
+    .AddRoles<BlogRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddScoped<UserManager<BlogUser>>();
 
 //Добавляем полититики для  администратора, модератора и пользователя
 builder.Services.AddAuthorization(options =>
 {
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+            // Резервная политика авторизации:
+            // Применяется ко всем запросам, которые явно не указывают политику авторизации.
+            // Для запросов, обслуживаемых маршрутизацией конечных точек, сюда входит любая конечная точка, не указывающая атрибут авторизации.
+            // Для запросов, обслуживаемых другим ПО промежуточного слоя после ПО промежуточного слоя авторизации,
+            // например статических файлов, эта политика применяется ко всем запросам.
+            .RequireAuthenticatedUser()
+            .Build();
+
     options.AddPolicy("RuleOwnerOrAdminOrModerator", policy =>
        policy.RequireAssertion(context =>
-            context.User.IsInRole("Administrator") ||
-            context.User.HasClaim(c => c.Type == "ArticleOwner" && c.Value == context.GetRouteValue("id"))
-        )
-    );
+            context.User.IsInRole("Administrator") || context.User.IsInRole("Moderator") ||
+            context.User.HasClaim(c => c.Type == "ArticleOwner" && c.Value == context.GetRouteValue("id"))));
+
+    options.AddPolicy("RuleAdministratorOrModerator", policy =>
+      policy.RequireAssertion(context =>
+           context.User.IsInRole("Administrator") || context.User.IsInRole("Moderator")));
+
+    options.AddPolicy("RoleAdministrator", policy => policy.RequireRole("Administrator"));
+    options.AddPolicy("RoleModerator", policy => policy.RequireRole("Moderator"));
+  
 });
+
+//подключение слабосвязанных сущностей, которые легко тестировать, модифицировать и обновлять. 
+builder.Services.AddScoped<IArticleService, ArticleService>();
+builder.Services.AddScoped<ITagService, TagService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 //изменияем стандартные настройки на попроще
 builder.Services.Configure<IdentityOptions>(options =>
@@ -56,7 +80,7 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Password.RequiredUniqueChars = 1;
 
     // Lockout settings.
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
 
@@ -73,6 +97,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
 
     options.LoginPath = "/Identity/Account/Login";
+    //подключаем страницу с сообщением о запрете доступа к ресурсу
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
     options.SlidingExpiration = true;
 });
@@ -89,6 +114,8 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc(name: "v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "WebApiSimpleBlog", Version = "v1" });
 });
 
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -101,6 +128,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    //подключаем страницу что то пошло не так
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
@@ -112,10 +140,15 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+//подключаем страничку на код 404
+app.UseStatusCodePagesWithReExecute("/Home/Error404", "?statusCode={0}");
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
+
+
 
 app.Run();
 

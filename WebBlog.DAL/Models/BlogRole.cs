@@ -13,5 +13,8 @@ namespace WebBlog.DAL.Models
     public class BlogRole : IdentityRole
     {
         public string Description { get; set; } = null!;
+
+        public virtual ICollection<BlogUserRole> UserRoles { get; set; } = null!;
+
     }
 }

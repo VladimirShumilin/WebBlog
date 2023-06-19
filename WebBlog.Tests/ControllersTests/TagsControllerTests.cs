@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Xml.Linq;
+using WebBlog.BLL.Services.Interfaces;
 using WebBlog.Contracts.Models.Request.Tag;
 using WebBlog.Contracts.Models.Responce.Article;
 using WebBlog.Contracts.Models.Responce.Comment;
@@ -16,13 +17,13 @@ namespace WebBlog.Tests.ControllersTests
 {
     public class TagsControllerTests
     {
-        private readonly Mock<ITagRepository> _TagRepositoryMock;
+        private readonly Mock<ITagService> _TagRepositoryMock;
         private readonly Mock<ILogger<TagsController>> _loggerMock;
         private readonly Mock<IMapper> _mapperMock;
 
         public TagsControllerTests()
         {
-            _TagRepositoryMock = new Mock<ITagRepository>();
+            _TagRepositoryMock = new Mock<ITagService>();
             _loggerMock = new Mock<ILogger<TagsController>>();
             _mapperMock = new Mock<IMapper>();
         }

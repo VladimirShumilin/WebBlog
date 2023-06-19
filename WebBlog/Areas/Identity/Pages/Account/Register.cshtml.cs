@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -32,14 +33,14 @@ namespace WebBlog.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<BlogUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly RoleManager<BlogRole> _roleManager;
 
         public RegisterModel(
             UserManager<BlogUser> userManager,
             IUserStore<BlogUser> userStore,
             SignInManager<BlogUser> signInManager,
             ILogger<RegisterModel> logger,
-            RoleManager<IdentityRole> roleManager,
+            RoleManager<BlogRole> roleManager,
             IEmailSender emailSender)
         {
             _userManager = userManager;
@@ -76,6 +77,13 @@ namespace WebBlog.Areas.Identity.Pages.Account
         /// </summary>
         public class InputModel
         {
+            [Required]
+            [Display(Name = "Имя")]
+            public string FirstName { get; set; }
+
+            [Required]
+            [Display(Name = "Фамилия")]
+            public string LastName { get; set; }
             /// <summary>
             ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
             ///     directly from your code. This API may change or be removed in future releases.
@@ -120,6 +128,10 @@ namespace WebBlog.Areas.Identity.Pages.Account
             {
                 var user = CreateUser();
 
+                user.FirstName = Input.FirstName;
+                user.LastName = Input.LastName;
+                
+
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
@@ -131,8 +143,23 @@ namespace WebBlog.Areas.Identity.Pages.Account
                     //добавить роль User(Пользователь) по умолчанию 
                     var defaultrole = _roleManager.FindByNameAsync("User").Result;
                     if (defaultrole != null)
-                             await _userManager.AddToRoleAsync(user, defaultrole.Name);
-                    
+                        await _userManager.AddToRoleAsync(user, defaultrole.Name);
+                    else
+                    {
+                        //если отсутствует роль пользоваетеля значит БД пуста 
+                        //создаем роли по умолчанию и даем пользователю права админа
+                       await _roleManager.CreateAsync(new BlogRole() { Name = "User",Description = "Пользователь" });
+
+                        if (_roleManager.FindByNameAsync("Moderator").Result is null)
+                            await _roleManager.CreateAsync(new BlogRole() { Name = "Moderator", Description = "Модератор" });
+
+                        if (_roleManager.FindByNameAsync("Administrator").Result is null)
+                        {
+                            await _roleManager.CreateAsync(new BlogRole() { Name = "Administrator", Description = "Администратор" });
+                            var admRole = _roleManager.FindByNameAsync("Administrator").Result;
+                            await _userManager.AddToRoleAsync(user, admRole.Name);
+                        }
+                    }
 
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);

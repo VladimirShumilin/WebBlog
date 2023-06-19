@@ -1,15 +1,14 @@
 ﻿using AutoMapper;
-using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
-using System.Security.Claims;
+using System.Globalization;
+using WebBlog.BLL.Services.Interfaces;
+using WebBlog.Contracts.Models;
 using WebBlog.Contracts.Models.Request.Article;
 using WebBlog.Contracts.Models.Responce.Article;
-using WebBlog.DAL.Interfaces;
 using WebBlog.DAL.Models;
 using WebBlog.Extensions;
 
@@ -19,48 +18,108 @@ namespace WebBlog.Controllers
     /// <summary>
     /// Контроллер для модели Article 
     /// </summary>
-    [ApiController]
     [Route("[controller]")]
-    [Authorize] // Защита контроллера от доступа неавторизованных пользователей
+    [AllowAnonymous]
     public class ArticlesController : Controller
     {
-        private readonly IArticleRepository _articleRepository;
-        private readonly ITagRepository _tagRepository;
+        private readonly IArticleService _articleService;
         private readonly ILogger<ArticlesController> _logger;
         private readonly IMapper _mapper;
         private readonly UserManager<BlogUser> _userManager;
 
-        public ArticlesController(IArticleRepository articleRepository, ITagRepository tagRepository,
+        public ArticlesController(IArticleService articleService,
             ILogger<ArticlesController> logger, UserManager<BlogUser> userManager, IMapper mapper)
         {
             _logger = logger;
             _mapper = mapper;
-            _articleRepository = articleRepository;
-            _tagRepository = tagRepository;
+            _articleService = articleService;
             _userManager = userManager;
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> Index(int? pageNumber, string sortOrder, string currentFilter, string searchString, string currentFilter1, string searchString1)
+        {
+            ////найти пользователя
+            //if (await _userManager.GetUserAsync(HttpContext.User) is BlogUser user1)
+            //{
+               
+            //}
+
+            //List<Article> articles = new();
+            //var user = await _userManager.GetUserAsync(User);
+            //if (user == null)
+            var    articles = (await _articleService.GetArticlesAsync()).ToList();
+            //else
+            //    articles = (await _articleService.GetArticlesByAuthorIdAsync(user.Id)).ToList();
+
+
+
+            if (searchString != null || searchString1 != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                if (searchString == null)
+                    searchString = currentFilter;
+
+                if (searchString1 == null)
+                    searchString1 = currentFilter1;
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+            ViewData["CurrentFilter1"] = searchString1;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+#pragma warning disable CS8602 // Разыменование вероятной пустой ссылки.
+                articles = articles.Where(s => s.Author.Email.ToUpper(CultureInfo.InvariantCulture)
+                .Contains(searchString.ToUpper(CultureInfo.InvariantCulture))).ToList();
+#pragma warning restore CS8602 // Разыменование вероятной пустой ссылки.
+            }
+
+            if (!String.IsNullOrEmpty(searchString1))
+            {
+                articles = articles.Where(s => s.Tags.FirstOrDefault(o => o.Name.ToUpper(CultureInfo.InvariantCulture)
+                .Contains(searchString1.ToUpper(CultureInfo.InvariantCulture))) != null).ToList();
+            }
+
+            ViewData["CurrentSort"] = sortOrder;
+            //all_blogArticles = _articleService.SortOrder(all_blogArticles, sortOrder);
+
+            var pageSize = 5;
+            List<ArticleViewModel> articleView = _mapper.Map<Article[], List<ArticleViewModel>>(articles.ToArray());
+
+            ArticleListViewModel blogArticleListViewModel = new() { blogArticles = articleView };
+            var userQueryable = blogArticleListViewModel.blogArticles.AsQueryable();
+            
+            var model = PaginatedList<ArticleViewModel>.CreateAsync(userQueryable, pageNumber ?? 1, pageSize);
+
+            return View("Index", model);
         }
 
         /// <summary>
         /// Просмотр списка всех статей
         /// </summary>
-        [HttpGet]
-        public async Task<IActionResult> Index()
-        {
-            try
-            {
-                if (await _articleRepository.GetArticlesAsync() is IEnumerable<Article> articles)
-                {
-                    List<ArticleViewModel> articleView = _mapper.Map<Article[], List<ArticleViewModel>>(articles.ToArray());
-                    return Ok(articleView.ToList());
-                }
-                return Problem("Entity set 'DbContext.Articles'  is null.");
-            }
-            catch (Exception ex)
-            {
-                _logger.CommonError(ex, "Error in Index method");
-                return StatusCode(500, "Internal server error");
-            }
-        }
+        //[HttpGet]
+        //public async Task<IActionResult> Index()
+        //{
+        //    try
+        //    {
+        //        if (await _articleService.GetArticlesAsync() is IEnumerable<Article> articles)
+        //        {
+        //            List<ArticleViewModel> articleView = _mapper.Map<Article[], List<ArticleViewModel>>(articles.ToArray());
+        //            return Ok(articleView.ToList());
+        //        }
+        //        return Problem("Entity set 'DbContext.Articles'  is null.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.CommonError(ex, "Error in Index method");
+        //        return StatusCode(500, "Internal server error");
+        //    }
+        //}
 
         /// <summary>
         /// Просмотр информации о статье с указанным Id 
@@ -73,11 +132,13 @@ namespace WebBlog.Controllers
             {
                 if (id is Guid lId)
                 {
-                    var article = await _articleRepository.GetArticleByIDAsync(lId);
+                    var article = await _articleService.GetArticleByIdAsync(lId);
+
                     if (article is not null)
                     {
+                        await  _articleService.IncCountOfViewsAsync(article.ArticleId);
                         var articleView = _mapper.Map<Article, ArticleViewModel>(article);
-                        return Ok(articleView);
+                        return View(articleView);
                     }
                 }
                 return NotFound();
@@ -100,7 +161,7 @@ namespace WebBlog.Controllers
             {
                 if (id is string authorId)
                 {
-                    var articles = await _articleRepository.GetArticlesByAuthorAsync(authorId);
+                    var articles = await _articleService.GetArticlesByAuthorIdAsync(authorId);
                     if (articles == null)
                         return NotFound();
                     
@@ -123,17 +184,21 @@ namespace WebBlog.Controllers
         /// <summary>
         /// Начальные данные для создание новой статьи
         /// </summary>
+        [Authorize]
         [HttpGet("Create")]
         public async Task<IActionResult> Create()
         {
             try
             {
                 //передаем в теле Id пользователя для которого будет создана статья
-
-                //список тегов
-                var tags = await _tagRepository.GetTagsAsync();
-                ViewData["Tags"] = new SelectList(tags, "TagId", "Name");
-                return Ok(ViewData);
+                if (await _userManager.GetUserAsync(HttpContext.User) is BlogUser user)
+                {
+                    var tags = await _articleService.GetTagsList();
+                    NewArticleRequest model = new() { Tags = tags, AuthorId = user.Id };
+                    return View(model);
+                }
+                return  Redirect("/Identity/Account/Login");
+          
             }
             catch (Exception ex)
             {
@@ -142,61 +207,32 @@ namespace WebBlog.Controllers
             }
         }
 
+
         /// <summary>
         /// Создает новую статью с указанным именем
         /// </summary>
         /// <param name="reguest"></param>
+        [Authorize]
         [HttpPost("Create")]
-
-#if !SWAGGER
         [ValidateAntiForgeryToken] 
-#endif
-        public async Task<IActionResult> Create([FromBody] NewArticleRequest? request)
+        public async Task<IActionResult> Create([Bind("AuthorId,Title,Content,Tags")]NewArticleRequest? request)
         {
+          
             if (request == null)
-                return BadRequest(request); // StatusCode(400, );
+                return BadRequest(request); 
 
             try
             {
                 if (ModelState.IsValid)
                 {
-                    var article = _mapper.Map<NewArticleRequest, Article>(request);
-                    //найти пользователя
-                    if (await _userManager.FindByIdAsync(article.AuthorId) is not BlogUser user)
-                        return BadRequest($"User AuthorId = {article.AuthorId} not found");
-
-                    // сохранение статьи в базу данных
-                    foreach (var tag in request.Tags)
+                    ////найти пользователя
+                    if (await _userManager.GetUserAsync(HttpContext.User) is BlogUser user)
                     {
-                        // создание нового тега или получение существующего из базы данных
-                        var existingTag = await _tagRepository.GetByNameAsync(tag.Name);
-                        if (existingTag == null)
-                        {
-                            existingTag = new Tag() { Name = tag.Name };
-                            await _tagRepository.InsertTagAsync(existingTag);
-                        }
-                        // добавление тега к статье
-                        article.Tags ??= new List<Tag>();
-
-                        article.Tags.Add(existingTag);
+                        if (await _articleService.AddAsync(request, user) is Article article)
+                            return RedirectToAction(nameof(Index));
                     }
-                    await _tagRepository.SaveAsync();
-
-
-                    article.Created = DateTime.Now;
-                    await _articleRepository.InsertArticleAsync(article);
-                    await _articleRepository.SaveAsync();
-
-                    //добавить пользователю утверждение ArticleOwner
-                    var claim = new Claim("ArticleOwner", article.ArticleId.ToString());
-                    await _userManager.AddClaimAsync(user, claim);
-                    
-                    return CreatedAtAction(nameof(Details), new { id = article.ArticleId }, article);
-
-
                 }
-                else
-                    return BadRequest(request);
+                return View("Create", request);
             }
             catch (Exception ex)
             {
@@ -217,12 +253,9 @@ namespace WebBlog.Controllers
             {
                 if (id is Guid lId)
                 {
-                    var article = await _articleRepository.GetArticleByIDAsync(lId);
-                    if (article is not null)
-                    {
-                        var articleView = _mapper.Map<Article, ArticleViewModel>(article);
-                        return Ok(articleView);
-                    }
+                    if(await _articleService.EditArticleRequestById(lId) is EditArticleRequest view)
+                        return View(view);
+                    
                 }
                 return NotFound();
             }
@@ -238,12 +271,10 @@ namespace WebBlog.Controllers
         /// </summary>
         /// <param name="id">ID редактируемого тега</param>
         /// <param name="reguest">класс EditTagRequest содержащий имя нового  тега</param>
-        [HttpPut("Edit/{id}")]
-#if !SWAGGER
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken] 
-#endif
         [Authorize(Policy = "RuleOwnerOrAdminOrModerator")]
-        public async Task<IActionResult> Edit(Guid id, [FromBody] EditArticleRequest reguest)
+        public async Task<IActionResult> Edit(Guid id, [Bind("ArticleId,AuthorId,Title,Content,Tags")] EditArticleRequest reguest)
         {
             if (reguest is null)
                 return NotFound();
@@ -251,39 +282,19 @@ namespace WebBlog.Controllers
             if (id != reguest.ArticleId)
                 return NotFound();
 
+            if (!ModelState.IsValid)
+                return BadRequest();
+            
+
             try
             {
-                var article = _mapper.Map<EditArticleRequest, Article>(reguest);
-               
 
-                //проверяем прошли ли все значения проверку на корректность
-                if (ModelState.IsValid)
-                { 
-                    if (article is null)
-                        throw new ArgumentException(nameof(article));
-
-                    try
-                    {
-
-                        if (_articleRepository.UpdateArticle(article))
-                            await _articleRepository.SaveAsync();
-                        else
-                            return NotFound();
-                    }
-                    catch (DbUpdateConcurrencyException)
-                    {
-                        if (!await _articleRepository.ArticleExistsAsync(reguest.ArticleId))
-                        {
-                            return NotFound();
-                        }
-                        else
-                        {
-                            throw;
-                        }
-                    }
-                    return Ok(); 
+                if (await _articleService.EditAsync(reguest) is Article article)
+                {
+                    var articleView = _mapper.Map<Article, ArticleViewModel>(article);
+                    return View("Details", articleView);
                 }
-               return BadRequest();
+                return BadRequest();
             }
             catch (Exception ex)
             {
@@ -299,7 +310,7 @@ namespace WebBlog.Controllers
         /// <param name="saveChangesError"></param>
 
         [HttpGet("Delete/{id}")]
-        [Authorize(Policy = "AccsessOwnerOrAdminOrModerator")]
+        [Authorize(Policy = "RuleOwnerOrAdminOrModerator")]
         public async Task<IActionResult> Delete(Guid? id, bool? saveChangesError = false)
         {
             try
@@ -311,11 +322,11 @@ namespace WebBlog.Controllers
 
                 if (id is Guid lId)
                 {
-                    var article = await _articleRepository.GetArticleByIDAsync(lId);
+                    var article = await _articleService.GetArticleByIdAsync(lId);
                     if (article is not null)
                     {
                         var articleView = _mapper.Map<Article, ArticleViewModel>(article);
-                        return Ok(articleView);
+                        return View(articleView);
                     }
                 }
                 return NotFound();
@@ -331,21 +342,18 @@ namespace WebBlog.Controllers
         /// Удаляет статью с указанным ид
         /// </summary>
         /// <param name="id">Ид тега для удаления</param>
-        
-        [HttpDelete("Delete")]
-#if !SWAGGER
-        [ValidateAntiForgeryToken] 
-#endif
+
+        [HttpPost("Delete/{id}")]
+        [ValidateAntiForgeryToken]
         [Authorize(Policy = "RuleOwnerOrAdminOrModerator")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             try
             {
-                if (await _articleRepository.GetArticleByIDAsync(id) is Article tag)
-                {
-                    await _articleRepository.DeleteArticleAsync(id);
-                    await _articleRepository.SaveAsync();
-                }
+                if (await _articleService.DeleteAsync(id))
+                    return RedirectToAction(nameof(Index));
+
+                return Problem($"Не удалось удалить статью {id}");
             }
             catch (DataException dex)
             {
@@ -357,8 +365,6 @@ namespace WebBlog.Controllers
                 _logger.CommonError(ex, "Error in Delete POST method");
                 return StatusCode(500, "Internal server error");
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         protected override void Dispose(bool disposing)

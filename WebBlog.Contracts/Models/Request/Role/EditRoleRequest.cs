@@ -11,10 +11,11 @@ namespace WebBlog.Contracts.Models.Request.Role
     {
         [Required]
         public string Id { get; set; } = default!;
-        [Required(ErrorMessage = "Role Name is empty")]
+
+        [Required(ErrorMessage = "Заполните поле Название"), Display(Name = "Название")]
         public string Name { get; set; } = default!;
 
-        [Required(ErrorMessage = "SecurityLvl ")]
-        public int SecurityLvl { get; set; }
+        [Required(ErrorMessage = "Заполните поле описание"), Display(Name = "Описание")]
+        public string Description { get; set; } = default!;
     }
 }
