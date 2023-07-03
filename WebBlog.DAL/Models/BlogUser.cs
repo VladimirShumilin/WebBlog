@@ -1,12 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WebBlog.DAL.Models
 {
@@ -22,6 +17,6 @@ namespace WebBlog.DAL.Models
 
         public virtual ICollection<IdentityUserClaim<string>> Claims { get; set; } = null!;
         public virtual ICollection<BlogUserRole> UserRoles { get; set; } = null!;
-        public virtual ICollection<BlogRole> Roles { get; set; } = null!; 
+        public virtual ICollection<BlogRole> Roles { get; set; } = null!;
     }
 }

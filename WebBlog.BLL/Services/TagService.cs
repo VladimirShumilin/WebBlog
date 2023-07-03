@@ -1,9 +1,7 @@
 ﻿using AutoMapper;
-using Azure.Core;
 using Microsoft.Extensions.Logging;
 using WebBlog.BLL.Services.Interfaces;
 using WebBlog.Contracts.Models.Request.Tag;
-using WebBlog.Contracts.Models.Responce.Tag;
 using WebBlog.DAL.Interfaces;
 using WebBlog.DAL.Models;
 
@@ -15,14 +13,12 @@ namespace WebBlog.BLL.Services
     public class TagService : ITagService
     {
         private readonly ITagRepository _tagsRepository;
-        private readonly IArticleRepository _articlesRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<TagService> _logger;
         
-        public TagService(ITagRepository tagsRepository, IArticleRepository blogArticlesRepository, IMapper mapper, ILogger<TagService> logger)
+        public TagService(ITagRepository tagsRepository,IMapper mapper, ILogger<TagService> logger)
         {
-            _tagsRepository = tagsRepository;
-            _articlesRepository = blogArticlesRepository;
+            _tagsRepository = tagsRepository;      
             _mapper = mapper;
             _logger = logger;
         }
@@ -67,7 +63,11 @@ namespace WebBlog.BLL.Services
             return tag;
 
         }
-
+        /// <summary>
+        /// Удаляет тег по ID
+        /// </summary>
+        /// <param name="tagId"></param>
+        /// <returns></returns>
         public async Task<bool> DeleteTagAsync(Guid tagId)
         {
             try
@@ -98,31 +98,14 @@ namespace WebBlog.BLL.Services
         {
             return _tagsRepository.GetByNameAsync(name);
         }
-
         public Task<IEnumerable<Tag>> GetTagsAsync()
         {
             return _tagsRepository.GetTagsIncludeArticles();
         }
-
         public Task<IEnumerable<Tag>> GetAllIncludeBlogArticles()
         {
             return _tagsRepository.GetTagsIncludeArticles();
         }
 
-        //public async Task<TagViewModel> GetListTagsViewModel()
-        //{
-        //    var tags = (await GetAllIncludeBlogArticles()).OrderBy(o => o.Name).ToList();
-
-        //    var viewModel = _mapper.Map<Tag[], List<TagViewModel>>(tags.ToArray());
-        //    return viewModel;
-        //}
-
-        //public async Task<TagViewModel> GetListTagsViewModelForUser(string userId) 
-        //{
-        //    var tags = (await GetAllIncludeBlogArticles()).OrderBy(o => o.Name).ToList();
-            
-        //    var model = new ListTagsViewModel(tags, user: user);
-        //    return model;
-        //}
     }
 }

@@ -7,6 +7,7 @@ using WebBlog.Contracts.Models.Request.Role;
 using WebBlog.Contracts.Models.Responce.Role;
 using WebBlog.Contracts.Models.Responce.Tag;
 using WebBlog.DAL.Models;
+using WebBlog.Extensions;
 
 namespace WebBlog.Controllers
 {
@@ -19,11 +20,13 @@ namespace WebBlog.Controllers
     {
         private readonly RoleManager<BlogRole> _roleManager;
         private readonly IMapper _mapper;
+        private readonly ILogger<RolesController> _logger;
 
-        public RolesController(RoleManager<BlogRole> roleManager, IMapper mapper)
+        public RolesController(RoleManager<BlogRole> roleManager, IMapper mapper, ILogger<RolesController> logger)
         {
             _roleManager = roleManager;
             _mapper = mapper;
+            _logger = logger;
         }
 
         /// <summary>
@@ -33,9 +36,17 @@ namespace WebBlog.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var roles = await _roleManager.Roles.ToListAsync(CancellationToken.None);
-            var models = _mapper.Map<BlogRole[], List<RoleViewModel>>(roles.ToArray()); 
-            return View(models);                
+            try
+            {
+                var roles = await _roleManager.Roles.ToListAsync(CancellationToken.None);
+                var models = _mapper.Map<BlogRole[], List<RoleViewModel>>(roles.ToArray());
+                return View(models);
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
         /// <summary>
         /// Возвращает роль по Id
@@ -47,37 +58,61 @@ namespace WebBlog.Controllers
             if (string.IsNullOrEmpty(id))
                 return BadRequest();
 
-            if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+            try
             {
-                var model = _mapper.Map<BlogRole, RoleViewModel>(role);
-                return View(model);
+                if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+                {
+                    var model = _mapper.Map<BlogRole, RoleViewModel>(role);
+                    return View(model);
+                }
+
+                return Problem($"Role Id:{id} not found");
             }
-            
-            return Problem($"Role Id:{id} not found");
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         [HttpGet("Create")]
         public IActionResult Create()
         {
-            return View();
+            try
+            {
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
         /// <summary>
         /// Добавление роли
         /// </summary>   
         [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult<TagViewModel>> CreateRole([Bind("Name,Description")]  NewRoleRequest request)
+        public async Task<ActionResult<TagViewModel>> CreateRole([Bind("Name,Description")] NewRoleRequest request)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var role = _mapper.Map<NewRoleRequest, BlogRole>(request);
-                var result = await _roleManager.CreateAsync(role);
-                if (result.Succeeded)
-                    return View("Create",request);
-                else
-                    return BadRequest(result.Errors.ToArray());
+                if (ModelState.IsValid)
+                {
+                    var role = _mapper.Map<NewRoleRequest, BlogRole>(request);
+                    var result = await _roleManager.CreateAsync(role);
+                    if (result.Succeeded)
+                        return View("Create", request);
+                    else
+                        return BadRequest(result.Errors.ToArray());
+                }
+                return BadRequest();
             }
-            return BadRequest();
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -91,13 +126,23 @@ namespace WebBlog.Controllers
             if (string.IsNullOrEmpty(id))
                 return BadRequest();
 
-            if (await _roleManager.FindByIdAsync(id) is BlogRole role)
-            {
-                var model = _mapper.Map<BlogRole, EditRoleRequest>(role);
-                return View(model);
-            }
 
-            return Problem($"Role Id:{id} not found");
+            try
+            {
+
+                if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+                {
+                    var model = _mapper.Map<BlogRole, EditRoleRequest>(role);
+                    return View(model);
+                }
+
+                return Problem($"Role Id:{id} not found");
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
         /// <summary>
         /// Редактирование роли
@@ -106,20 +151,28 @@ namespace WebBlog.Controllers
         public async Task<IActionResult> EditRole([Bind("Id,Name,Description")] EditRoleRequest request)
         {
 
-            if (ModelState.IsValid)
+            try
             {
-                //var newRole = _mapper.Map<EditRoleRequest, BlogRole>(request);
-
-                if (await _roleManager.FindByIdAsync(request.Id) is BlogRole role)
+                if (ModelState.IsValid)
                 {
-                    role.Name = request.Name;
-                    role.Description = request.Description;
-                    var result = await _roleManager.UpdateAsync(role);
-                    return RedirectToAction(nameof(Index));
+                    //var newRole = _mapper.Map<EditRoleRequest, BlogRole>(request);
+
+                    if (await _roleManager.FindByIdAsync(request.Id) is BlogRole role)
+                    {
+                        role.Name = request.Name;
+                        role.Description = request.Description;
+                        var result = await _roleManager.UpdateAsync(role);
+                        return RedirectToAction(nameof(Index));
+                    }
+                    return BadRequest($"Role Id:{request.Id} not found");
                 }
-                return BadRequest($"Role Id:{request.Id} not found");
+                return BadRequest();
             }
-            return BadRequest();
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -133,13 +186,22 @@ namespace WebBlog.Controllers
             if (string.IsNullOrEmpty(id))
                 return BadRequest();
 
-            if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+            try
             {
-                var model = _mapper.Map<BlogRole, RoleViewModel>(role);
-                return View(model);
-            }
 
-            return Problem($"Role Id:{id} not found");
+                if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+                {
+                    var model = _mapper.Map<BlogRole, RoleViewModel>(role);
+                    return View(model);
+                }
+
+                return Problem($"Role Id:{id} not found");
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -152,12 +214,21 @@ namespace WebBlog.Controllers
             if (string.IsNullOrEmpty(id))
                 return BadRequest();
 
-            if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+            try
             {
-                await _roleManager.DeleteAsync(role);
-                return RedirectToAction(nameof(Index));
+
+                if (await _roleManager.FindByIdAsync(id) is BlogRole role)
+                {
+                    await _roleManager.DeleteAsync(role);
+                    return RedirectToAction(nameof(Index));
+                }
+                return BadRequest($"Role Id:{id} not found");
             }
-            return BadRequest($"Role Id:{id} not found");
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
     }
 }

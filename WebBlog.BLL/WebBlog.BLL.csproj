@@ -11,7 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WebBlog.Contracts\WebBlog.Contracts.csproj" />
     <ProjectReference Include="..\WebBlog.DAL\WebBlog.DAL.csproj" />
   </ItemGroup>
 

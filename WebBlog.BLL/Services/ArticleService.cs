@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -11,7 +10,6 @@ using WebBlog.Contracts.Models.Responce.Article;
 using WebBlog.Contracts.Models.Responce.Tag;
 using WebBlog.DAL.Interfaces;
 using WebBlog.DAL.Models;
-using WebBlog.DAL.Repositories;
 
 namespace WebBlog.BLL.Services
 {
@@ -171,11 +169,16 @@ namespace WebBlog.BLL.Services
         {
             if (await _articleRepository.GetArticleByIDAsync(id) is Article article)
             {
-                var articleView = _mapper.Map<Article, EditArticleRequest>(article);
+                if( _mapper.Map<Article, EditArticleRequest>(article) is not EditArticleRequest articleView)
+                    return null;
+
+                if (articleView.Tags is  null)
+                    return null;
+
                 //проставить стус тегов
                 foreach (var t in articleView.Tags)
-                    t.IsTagSelected = true;
-
+                        t.IsTagSelected = true;
+                
                 //добавить полный список тегов
                 var tags = await _tagRepository.GetTagsAsync();
                 var tagsView = tags.Select(r => new TagViewModel

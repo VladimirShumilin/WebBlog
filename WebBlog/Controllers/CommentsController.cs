@@ -2,17 +2,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using WebBlog.Contracts.Models.Request.Article;
 using WebBlog.Contracts.Models.Request.Comment;
 using WebBlog.Contracts.Models.Responce.Comment;
-using WebBlog.Contracts.Models.Responce.Tag;
 using WebBlog.DAL.Interfaces;
 using WebBlog.DAL.Models;
 using WebBlog.Extensions;
 
 namespace WebBlog.Controllers
 {
-    
+
     [Route("[controller]")]
     [Authorize] // Защита контроллера от доступа неавторизованных пользователей
     public class CommentsController : Controller
@@ -239,10 +237,9 @@ namespace WebBlog.Controllers
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpPost("Delete/{id}")]
-#if !SWAGGER
         [ValidateAntiForgeryToken]
         [Authorize(Policy = "RuleAdministratorOrModerator")]
-#endif
+
 
         public async Task<IActionResult> DeleteComment(Guid id)
         {

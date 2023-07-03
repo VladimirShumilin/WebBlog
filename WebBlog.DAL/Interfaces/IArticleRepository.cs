@@ -13,7 +13,7 @@ namespace WebBlog.DAL.Interfaces
         Task<bool> IncCountOfViewsAsync(Guid articleId);
         // Task<bool> RemoveTagFromArticle(Guid articleId, Guid tagId);
         
-         Task<IEnumerable<Article>> GetArticlesByAuthorAsync(string authorId);
+        Task<IEnumerable<Article>> GetArticlesByAuthorAsync(string authorId);
         Task InsertArticleAsync(Article article);
         Task DeleteArticleAsync(Guid articleId);
         bool UpdateArticle(Article article);

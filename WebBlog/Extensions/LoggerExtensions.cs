@@ -24,6 +24,12 @@
                eventId: 3,
                formatString: "Executing action at '{StartTime}'");
 
+        private static readonly Action<ILogger, string, Exception?>
+           recordUserAction = LoggerMessage.Define<string>(
+               logLevel: LogLevel.Information,
+               eventId: 4,
+               formatString: "Executing action at '{StartTime}'");
+
         /// <summary>
         /// Записывает строку msg и объект ex в лог уровня LogLevel.Error и ID равным 1.
         /// </summary>
@@ -56,6 +62,18 @@
             this ILogger logger, string msg)
         {
             commonWarn(logger, msg, null);
+        }
+
+        /// <summary>
+        /// Записывает строку msg  в лог уровня LogLevel.Information и ID равным 4.
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <param name="msg"></param>
+        /// <param name="ex"></param>
+        public static void RecordUserAction(
+            this ILogger logger, string msg)
+        {
+            recordUserAction(logger, msg, null);
         }
     }
 }
