@@ -21,7 +21,7 @@ namespace WebBlog.Controllers
     [Authorize] // Защита контроллера от доступа неавторизованных пользователей
     public class TagsController : Controller
     {
-      
+
         private readonly IMapper _mapper;
         private readonly ITagService _tagService;
         private readonly ILogger<TagsController> _logger;
@@ -47,7 +47,8 @@ namespace WebBlog.Controllers
                 var Tags = await _tagService.GetTagsAsync();
                 var viewModel = _mapper.Map<Tag[], List<TagViewModel>>(Tags.ToArray());
                 return View("Index", viewModel);
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.CommonError(ex, "Error in GetTags method");
                 return StatusCode(500, "Internal server error");
@@ -109,7 +110,14 @@ namespace WebBlog.Controllers
         [HttpGet("Create")]
         public IActionResult Create()
         {
-            return View();
+            try { 
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -118,13 +126,13 @@ namespace WebBlog.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("Create")]
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
         public async Task<ActionResult<TagViewModel>> CreateTag([Bind("Name")] NewTagRequest request)
         {
             if (request == null)
                 return RedirectToAction("Error", "Home", new { message = "Tag is null" });
 
-            
+
 
             try
             {
@@ -157,17 +165,25 @@ namespace WebBlog.Controllers
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(Guid? id)
         {
-            if (id == null )
+            if (id == null)
             {
                 return NotFound();
             }
 
-            if (await _tagService.GetTagByIDAsync((Guid)id) is Tag tag)
+            try
             {
-                var viewModel = _mapper.Map<Tag, EditTagRequest>(tag);
-                return View(viewModel);
+                if (await _tagService.GetTagByIDAsync((Guid)id) is Tag tag)
+                {
+                    var viewModel = _mapper.Map<Tag, EditTagRequest>(tag);
+                    return View(viewModel);
+                }
+                return NotFound();
             }
-            return NotFound();
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -177,12 +193,12 @@ namespace WebBlog.Controllers
         /// <param name="Tag"></param>
         /// <returns></returns>
         [HttpPost("Edit/{id}")]
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("TagId,Name")] EditTagRequest request)
         {
             if (id != request.TagId)
                 return BadRequest("Tag ID mismatch");
-            
+
             try
             {
                 if (ModelState.IsValid)
@@ -220,13 +236,20 @@ namespace WebBlog.Controllers
             {
                 return NotFound();
             }
-
-            if (await _tagService.GetTagByIDAsync((Guid)id) is Tag tag)
+            try
             {
-                var viewModel = _mapper.Map<Tag, TagViewModel>(tag);
-                return View(viewModel);
+                if (await _tagService.GetTagByIDAsync((Guid)id) is Tag tag)
+                {
+                    var viewModel = _mapper.Map<Tag, TagViewModel>(tag);
+                    return View(viewModel);
+                }
+                return NotFound();
             }
-            return NotFound();
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -251,7 +274,7 @@ namespace WebBlog.Controllers
                 return StatusCode(500, "Internal server error");
             }
 
-           
+
         }
     }
 }

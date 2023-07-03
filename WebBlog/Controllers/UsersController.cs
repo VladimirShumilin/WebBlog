@@ -17,7 +17,7 @@ using WebBlog.Extensions;
 
 namespace WebBlog.Controllers
 {
- 
+
     [Route("[controller]")]
     [Authorize(Roles = "Administrator")]
     public class UsersController : Controller
@@ -42,24 +42,30 @@ namespace WebBlog.Controllers
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-#if !SWAGGER
-        [ValidateAntiForgeryToken] 
-#endif
+        [ValidateAntiForgeryToken]
         [HttpPost]
         public async Task<IActionResult> AddUser([FromBody] NewUserRequest model)
         {
-            if (ModelState.IsValid)
+            try
             {
-                var user = _mapper.Map<NewUserRequest,BlogUser> (model); ;
-                var result = await _userManager.CreateAsync(user, model.Password);
-
-                if (result.Succeeded)
+                if (ModelState.IsValid)
                 {
-                    return Ok();
+                    var user = _mapper.Map<NewUserRequest, BlogUser>(model); ;
+                    var result = await _userManager.CreateAsync(user, model.Password);
+
+                    if (result.Succeeded)
+                    {
+                        return Ok();
+                    }
+                    return BadRequest(result.Errors);
                 }
-                return BadRequest(result.Errors);
+                return BadRequest();
             }
-            return BadRequest();
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -70,12 +76,20 @@ namespace WebBlog.Controllers
         [HttpGet("Delete/{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var user = await _userService.GetUserEditViewModelAsync(id);
+            try
+            {
+                var user = await _userService.GetUserEditViewModelAsync(id);
 
-            if (user == null)
-                return NotFound();
+                if (user == null)
+                    return NotFound();
 
-            return View(user);
+                return View(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
         /// <summary>
         /// Удаляет пользователя
@@ -85,21 +99,29 @@ namespace WebBlog.Controllers
         [HttpPost("Delete/{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
-
-            if (user == null)
+            try
             {
-                return NotFound();
+                var user = await _userManager.FindByIdAsync(id);
+
+                if (user == null)
+                {
+                    return NotFound();
+                }
+
+                var result = await _userManager.DeleteAsync(user);
+
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("Index");
+                }
+
+                return BadRequest(result.Errors);
             }
-
-            var result = await _userManager.DeleteAsync(user);
-
-            if (result.Succeeded)
+            catch (Exception ex)
             {
-                return RedirectToAction("Index");
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
             }
-
-            return BadRequest(result.Errors);
         }
 
         /// <summary>
@@ -113,7 +135,7 @@ namespace WebBlog.Controllers
             {
                 if (await _userService.GetUsersViewModelAsync() is IEnumerable<UserViewModel> usersView)
                     return View(usersView);
-                
+
 
                 _logger.CommonError(null, "_userManager.Users.ToListAsync() is not IEnumerable<BlogUser>");
                 return Problem("Internal server error", "", 500);
@@ -121,7 +143,7 @@ namespace WebBlog.Controllers
             catch (Exception ex)
             {
                 _logger.CommonError(ex, "Error in GetAllUsers method");
-                return Problem("Internal server error","",500);
+                return Problem("Internal server error", "", 500);
             }
         }
 
@@ -133,13 +155,21 @@ namespace WebBlog.Controllers
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(string id)
         {
-            var user = await _userService.GetUserEditViewModelAsync(id);
+            try
+            {
+                var user = await _userService.GetUserEditViewModelAsync(id);
 
-            if (user == null)
-                return NotFound();
-            
+                if (user == null)
+                    return NotFound();
 
-            return View(user);
+
+                return View(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -149,26 +179,34 @@ namespace WebBlog.Controllers
         /// <param name="model"></param>
         /// <returns></returns>
 
-        [ValidateAntiForgeryToken] 
+        [ValidateAntiForgeryToken]
         [HttpPost("Edit/{id}")]
         public async Task<IActionResult> Edit(string id, [Bind("Id,Email,NewPassword,FirstName,LastName,UserRoles")] EditUserViewModel model)
         {
             if (id != model.Id)
                 return NotFound();
 
-            if (ModelState.IsValid)
+            try
             {
-                
-                if (await _userService.UpdateUser(model)  is IdentityResult result)
+                if (ModelState.IsValid)
                 {
-                    if (result.Succeeded)
+
+                    if (await _userService.UpdateUser(model) is IdentityResult result)
                     {
-                        var viewModel = await _userService.GetUserViewModelAsync(model.Id);
-                        return View("Details", viewModel);
+                        if (result.Succeeded)
+                        {
+                            var viewModel = await _userService.GetUserViewModelAsync(model.Id);
+                            return View("Details", viewModel);
+                        }
                     }
                 }
+                return View(model);
             }
-            return View(model);
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -180,30 +218,38 @@ namespace WebBlog.Controllers
         [HttpPost("{userId}/roles/{roleName}")]
         public async Task<IActionResult> AddRoleToUser(string userId, string roleName)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-
-            if (user == null)
+            try
             {
-                return NotFound($"User id {userId} not found") ;;
+                var user = await _userManager.FindByIdAsync(userId);
+
+                if (user == null)
+                {
+                    return NotFound($"User id {userId} not found"); ;
+                }
+
+                var role = await _roleManager.FindByNameAsync(roleName);
+
+                if (role == null)
+                {
+                    return NotFound($"Role name {roleName} not found");
+                }
+                if (role.Name is null)
+                    return NotFound();
+
+                var result = await _userManager.AddToRoleAsync(user, role.Name);
+
+                if (result.Succeeded)
+                {
+                    return Ok();
+                }
+
+                return BadRequest(result.Errors);
             }
-
-            var role = await _roleManager.FindByNameAsync(roleName);
-
-            if (role == null)
+            catch (Exception ex)
             {
-                return NotFound($"Role name {roleName} not found");
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
             }
-            if (role.Name is null)
-                return NotFound();
-
-            var result = await _userManager.AddToRoleAsync(user, role.Name);
-
-            if (result.Succeeded)
-            {
-                return Ok();
-            }
-
-            return BadRequest(result.Errors);
         }
 
         /// <summary>
@@ -215,27 +261,35 @@ namespace WebBlog.Controllers
         [HttpDelete("{userId}/roles/{roleName}")]
         public async Task<IActionResult> RemoveRoleFromUser(string userId, string roleName)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
 
-            if (user == null)
-                return NotFound();
-
-
-            var role = await _roleManager.FindByNameAsync(roleName);
-
-            if (role == null)
-                return NotFound();
-
-            if (string.IsNullOrEmpty(role.Name))
-                return NotFound();
-
-            var result = await _userManager.RemoveFromRoleAsync(user, role.Name);
-
-            if (result.Succeeded)
-                return Ok();
+                if (user == null)
+                    return NotFound();
 
 
-            return BadRequest(result.Errors);
+                var role = await _roleManager.FindByNameAsync(roleName);
+
+                if (role == null)
+                    return NotFound();
+
+                if (string.IsNullOrEmpty(role.Name))
+                    return NotFound();
+
+                var result = await _userManager.RemoveFromRoleAsync(user, role.Name);
+
+                if (result.Succeeded)
+                    return Ok();
+
+
+                return BadRequest(result.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         /// <summary>
@@ -246,16 +300,24 @@ namespace WebBlog.Controllers
         [HttpGet("{userId}/roles")]
         public async Task<IActionResult> GetRolesForUser(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-                return NotFound();
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                    return NotFound();
 
 
-            var role = await _userManager.GetRolesAsync(user);
-            if (role == null)
-                return NotFound();
+                var role = await _userManager.GetRolesAsync(user);
+                if (role == null)
+                    return NotFound();
 
                 return Ok(role);
+            }
+            catch (Exception ex)
+            {
+                _logger.CommonError(ex, "Error in DeleteComment method");
+                return StatusCode(500, "Internal server error");
+            }
         }
     }
 }

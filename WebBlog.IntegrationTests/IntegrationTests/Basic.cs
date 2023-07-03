@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc.Testing;
+using System.Net;
 
 namespace WebBlog.IntegrationTests.IntegrationTests
 {
@@ -29,6 +30,27 @@ namespace WebBlog.IntegrationTests.IntegrationTests
                     response.Content.Headers.ContentType?.ToString());
             }
         }
+
+        [Fact]
+        public async Task GetSecurePageRedirectsAnUnauthenticatedUser()
+        {
+            // Arrange
+            var client = _factory.CreateClient(
+                new WebApplicationFactoryClientOptions
+                {
+                    AllowAutoRedirect = false
+                });
+
+            // Act
+            var response = await client.GetAsync("/SecurePage");
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+            Assert.StartsWith("http://localhost/Identity/Account/Login",
+                response.Headers.Location?.OriginalString);
+        }
+
        
+
     }
 }

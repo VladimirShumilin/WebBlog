@@ -18,6 +18,7 @@ namespace WebBlog.Controllers
 
         public IActionResult Index()
         {
+
             return RedirectToAction("Index", "Articles");
         }
 

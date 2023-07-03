@@ -3,7 +3,7 @@ using WebBlog.DAL;
 using WebBlog.DAL.Interfaces;
 using WebBlog.DAL.Models;
 
-namespace SamplWebAppEmptyeBlog.DAL.Repositories
+namespace WebBlog.DAL.Repositories
 {
     /// <summary>
     /// Репозиторий модели Tag

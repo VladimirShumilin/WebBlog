@@ -40,86 +40,60 @@ namespace WebBlog.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index(int? pageNumber, string sortOrder, string currentFilter, string searchString, string currentFilter1, string searchString1)
         {
-            ////найти пользователя
-            //if (await _userManager.GetUserAsync(HttpContext.User) is BlogUser user1)
-            //{
-               
-            //}
-
-            //List<Article> articles = new();
-            //var user = await _userManager.GetUserAsync(User);
-            //if (user == null)
-            var    articles = (await _articleService.GetArticlesAsync()).ToList();
-            //else
-            //    articles = (await _articleService.GetArticlesByAuthorIdAsync(user.Id)).ToList();
-
-
-
-            if (searchString != null || searchString1 != null)
+            try
             {
-                pageNumber = 1;
-            }
-            else
-            {
-                if (searchString == null)
-                    searchString = currentFilter;
+                ////найти пользователя
+                var articles = (await _articleService.GetArticlesAsync()).ToList();
 
-                if (searchString1 == null)
-                    searchString1 = currentFilter1;
-            }
+                if (searchString != null || searchString1 != null)
+                {
+                    pageNumber = 1;
+                }
+                else
+                {
+                    if (searchString == null)
+                        searchString = currentFilter;
 
-            ViewData["CurrentFilter"] = searchString;
-            ViewData["CurrentFilter1"] = searchString1;
+                    if (searchString1 == null)
+                        searchString1 = currentFilter1;
+                }
 
-            if (!String.IsNullOrEmpty(searchString))
-            {
+                ViewData["CurrentFilter"] = searchString;
+                ViewData["CurrentFilter1"] = searchString1;
+
+                if (!String.IsNullOrEmpty(searchString))
+                {
 #pragma warning disable CS8602 // Разыменование вероятной пустой ссылки.
-                articles = articles.Where(s => s.Author.Email.ToUpper(CultureInfo.InvariantCulture)
-                .Contains(searchString.ToUpper(CultureInfo.InvariantCulture))).ToList();
+                    articles = articles.Where(s => s.Author.Email.ToUpper(CultureInfo.InvariantCulture)
+                    .Contains(searchString.ToUpper(CultureInfo.InvariantCulture))).ToList();
 #pragma warning restore CS8602 // Разыменование вероятной пустой ссылки.
-            }
+                }
 
-            if (!String.IsNullOrEmpty(searchString1))
+                if (!String.IsNullOrEmpty(searchString1))
+                {
+                    articles = articles.Where(s => s.Tags.FirstOrDefault(o => o.Name.ToUpper(CultureInfo.InvariantCulture)
+                    .Contains(searchString1.ToUpper(CultureInfo.InvariantCulture))) != null).ToList();
+                }
+
+                ViewData["CurrentSort"] = sortOrder;
+                //all_blogArticles = _articleService.SortOrder(all_blogArticles, sortOrder);
+
+                var pageSize = 5;
+                List<ArticleViewModel> articleView = _mapper.Map<Article[], List<ArticleViewModel>>(articles.ToArray());
+
+                ArticleListViewModel blogArticleListViewModel = new() { blogArticles = articleView };
+                var userQueryable = blogArticleListViewModel.blogArticles.AsQueryable();
+
+                var model = PaginatedList<ArticleViewModel>.CreateAsync(userQueryable, pageNumber ?? 1, pageSize);
+
+                return View("Index", model);
+            }
+            catch (Exception ex)
             {
-                articles = articles.Where(s => s.Tags.FirstOrDefault(o => o.Name.ToUpper(CultureInfo.InvariantCulture)
-                .Contains(searchString1.ToUpper(CultureInfo.InvariantCulture))) != null).ToList();
+                _logger.CommonError(ex, "Error in Details method");
+                return StatusCode(500, "Internal server error");
             }
-
-            ViewData["CurrentSort"] = sortOrder;
-            //all_blogArticles = _articleService.SortOrder(all_blogArticles, sortOrder);
-
-            var pageSize = 5;
-            List<ArticleViewModel> articleView = _mapper.Map<Article[], List<ArticleViewModel>>(articles.ToArray());
-
-            ArticleListViewModel blogArticleListViewModel = new() { blogArticles = articleView };
-            var userQueryable = blogArticleListViewModel.blogArticles.AsQueryable();
-            
-            var model = PaginatedList<ArticleViewModel>.CreateAsync(userQueryable, pageNumber ?? 1, pageSize);
-
-            return View("Index", model);
         }
-
-        /// <summary>
-        /// Просмотр списка всех статей
-        /// </summary>
-        //[HttpGet]
-        //public async Task<IActionResult> Index()
-        //{
-        //    try
-        //    {
-        //        if (await _articleService.GetArticlesAsync() is IEnumerable<Article> articles)
-        //        {
-        //            List<ArticleViewModel> articleView = _mapper.Map<Article[], List<ArticleViewModel>>(articles.ToArray());
-        //            return Ok(articleView.ToList());
-        //        }
-        //        return Problem("Entity set 'DbContext.Articles'  is null.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.CommonError(ex, "Error in Index method");
-        //        return StatusCode(500, "Internal server error");
-        //    }
-        //}
 
         /// <summary>
         /// Просмотр информации о статье с указанным Id 
@@ -130,6 +104,7 @@ namespace WebBlog.Controllers
         {
             try
             {
+               
                 if (id is Guid lId)
                 {
                     var article = await _articleService.GetArticleByIdAsync(lId);
