@@ -33,10 +33,10 @@ namespace WebBlog.BLL.Services
         public async Task<IEnumerable<UserViewModel>?> GetUsersViewModelAsync()
         {
 #pragma warning disable CS8601 // Возможно, назначение-ссылка, допускающее значение NULL.
-            List<UserViewModel> models = new List<UserViewModel>(_userManager.Users.Count());
+            List<UserViewModel> models = new(_userManager.Users.Count());
             foreach (BlogUser u in _userManager.Users)
             {
-                UserViewModel uvm = new UserViewModel()
+                UserViewModel uvm = new ()
                 {
                     Id = u.Id,
                     UserName = u.UserName,
@@ -124,7 +124,7 @@ namespace WebBlog.BLL.Services
             var result = await _userManager.SetUserNameAsync(user, request.Email);
             if (!result.Succeeded)
             {
-                _logger.LogError($"UpdateUser. SetUserNameAsync failed: {result}");
+                _logger.LogError("UpdateUser. SetUserNameAsync failed: {Result}", result);
                 return result;
             }
 
@@ -134,7 +134,7 @@ namespace WebBlog.BLL.Services
                 result = await _userManager.ResetPasswordAsync(user,token,request.NewPassword);
                 if (!result.Succeeded)
                 {
-                    _logger.LogError($"UpdateUser. ResetPasswordAsync failed: {result}");
+                    _logger.LogError("UpdateUser. ResetPasswordAsync failed: {Result}", result);
                     return result;
                 }
             }
@@ -145,7 +145,7 @@ namespace WebBlog.BLL.Services
             result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
-                _logger.LogError($"UpdateUser. UpdateAsync failed: {result}");
+                _logger.LogError("UpdateUser. UpdateAsync failed: {Result}", result);
                 return result;
             }
             //обновление ролей
@@ -156,13 +156,13 @@ namespace WebBlog.BLL.Services
                 if (r.IsChecked && !roleActive)
                 {
                     result = await _userManager.AddToRoleAsync(user, r.Name);
-                    _logger.LogError($"UpdateUser. AddToRoleAsync failed: {result}");
+                    _logger.LogError("UpdateUser. AddToRoleAsync failed: {Result}", result);
                     return result;
                 }
                 else if (!r.IsChecked && roleActive)
                 {
                     result = await _userManager.RemoveFromRoleAsync(user, r.Name);
-                    _logger.LogError($"UpdateUser. RemoveFromRoleAsync failed: {result}");
+                    _logger.LogError("UpdateUser. RemoveFromRoleAsync failed: {Result}", result);
                     return result;
                 }
                 

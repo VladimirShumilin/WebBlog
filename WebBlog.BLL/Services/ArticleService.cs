@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -72,8 +73,8 @@ namespace WebBlog.BLL.Services
                 //добавить пользователю утверждение ArticleOwner
                 var claim = new Claim("ArticleOwner", article.ArticleId.ToString());
                 await _userManager.AddClaimAsync(user, claim);
-
-                _logger.LogInformation($"Статья '{request.Title}' добавлена.");
+                var title = request.Title;
+                _logger.LogInformation("Статья '{Title}' добавлена.", title);
                 return article;
             }
             catch (Exception ex)
@@ -92,14 +93,17 @@ namespace WebBlog.BLL.Services
                 {
                     await _articleRepository.DeleteArticleAsync(id);
                     await _articleRepository.SaveAsync();
-                    
-                    _logger.LogInformation($"Статья '{article.Title}' удалена.");
+
+                    var title = article.Title;
+                    _logger.LogInformation("Статья '{Title}' удалена.", title);
+
+                  
                     return true;
                 } 
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Ошибка при удалении статьи {id}.") ;
+                _logger.LogError(ex, "Ошибка при удалении статьи {Id}.", id) ;
                 
             }
             return false;
@@ -150,8 +154,10 @@ namespace WebBlog.BLL.Services
                         throw;
                     }
                 }
+                var title = request.Title;
+                _logger.LogInformation("Статья '{Title}' изменена.", title);
 
-                _logger.LogInformation($"Статья '{request.Title}' изменена.");
+                
                 return article;
             }
             catch (Exception ex)
@@ -218,7 +224,7 @@ namespace WebBlog.BLL.Services
             return await _articleRepository.GetArticlesAsync();
         }
 
-        public string SetTagsInModel(List<Tag> tags)
+        public static string SetTagsInModel(List<Tag> tags)
         {
             bool first = true;
             string tagStr = "";
@@ -252,29 +258,21 @@ namespace WebBlog.BLL.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Ошибка при просмотре статьи {id}");
+                    _logger.LogError(ex, "Ошибка при просмотре статьи {Id}",id);
                     return false;
                 }               
             
         }
 
-        public IEnumerable<Article> SortOrder(IEnumerable<Article> blogArticle, string sortOrder)
+        public static IEnumerable<Article> SortOrder(IEnumerable<Article> blogArticle, string sortOrder)
         {
-            switch (sortOrder)
+            blogArticle = sortOrder switch
             {
-                case "Title":
-                    blogArticle = blogArticle.OrderBy(s => s.Title).ToList();
-                    break;
-                case "Author":
-                    blogArticle = blogArticle.OrderBy(s => s.Author?.Email).ToList();
-                    break;
-                case "DateCreation":
-                    blogArticle = blogArticle.OrderByDescending(s => s.Created).ToList();
-                    break;
-                default:
-                    blogArticle = blogArticle.OrderByDescending(s => s.Created).ToList();
-                    break;
-            }
+                "Title" => blogArticle.OrderBy(s => s.Title).ToList(),
+                "Author" => blogArticle.OrderBy(s => s.Author?.Email).ToList(),
+                "DateCreation" => blogArticle.OrderByDescending(s => s.Created).ToList(),
+                _ => blogArticle.OrderByDescending(s => s.Created).ToList(),
+            };
             return blogArticle;
         }
     }

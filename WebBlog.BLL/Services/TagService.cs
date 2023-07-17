@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure;
 using Microsoft.Extensions.Logging;
 using WebBlog.BLL.Services.Interfaces;
 using WebBlog.Contracts.Models.Request.Tag;
@@ -33,12 +34,15 @@ namespace WebBlog.BLL.Services
             var newTag = _mapper.Map<NewTagRequest, Tag>(request);
             //проверить на налицие уже тега с таким именем
             if (await _tagsRepository.TagExistsAsync(newTag.Name))
+#pragma warning disable CA2208 // Правильно создавайте экземпляры исключений аргументов
                 throw new ArgumentException($"Тег '{request.Name}' уже присутствует в БД. ", nameof(request.Name));
+#pragma warning restore CA2208 // Правильно создавайте экземпляры исключений аргументов
 
             await _tagsRepository.InsertTagAsync(newTag);
             await _tagsRepository.SaveAsync();
 
-            _logger.LogInformation($"Тег '{newTag.Name}' добавлен.");
+            var name = newTag.Name;
+            _logger.LogInformation("Тег '{Name}' добавлен.", name);
             return newTag;
             
         }
@@ -52,14 +56,17 @@ namespace WebBlog.BLL.Services
             var tag = _mapper.Map<EditTagRequest, Tag>(request);
             //проверить на налицие уже тега с таким именем
             if (!await _tagsRepository.TagExistsAsync(tag.TagId))
+#pragma warning disable CA2208 // Правильно создавайте экземпляры исключений аргументов
                 throw new ArgumentException($"Тег '{request.Name}' отсутствует в БД", nameof(request.Name));
+#pragma warning restore CA2208 // Правильно создавайте экземпляры исключений аргументов
 
             if (!_tagsRepository.UpdateTag(tag))
                 throw new Exception("Обновление данных завершилось с ошибкой");
 
             await _tagsRepository.SaveAsync();
 
-            _logger.LogInformation($"Тег '{tag.Name}' добавлен.");
+            var name = tag.Name;
+            _logger.LogInformation("Тег '{Name}' добавлен.", name);
             return tag;
 
         }
@@ -80,7 +87,9 @@ namespace WebBlog.BLL.Services
                 await _tagsRepository.DeleteTagAsync(tagId);
                 await _tagsRepository.SaveAsync();
 
-                _logger.LogInformation($"Тег '{tagId}' удален.");
+     
+                _logger.LogInformation("Тег '{TagId}' удален.", tagId);
+               
                 return true;
             }
             catch (Exception ex)
