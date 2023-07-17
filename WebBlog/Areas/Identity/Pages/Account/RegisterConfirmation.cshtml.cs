@@ -17,7 +17,9 @@ namespace WebBlog.Areas.Identity.Pages.Account
     public class RegisterConfirmationModel : PageModel
     {
         private readonly UserManager<BlogUser> _userManager;
+#pragma warning disable IDE0052 // Удалить непрочитанные закрытые члены
         private readonly IEmailSender _sender;
+#pragma warning restore IDE0052 // Удалить непрочитанные закрытые члены
 
         public RegisterConfirmationModel(UserManager<BlogUser> userManager, IEmailSender sender)
         {

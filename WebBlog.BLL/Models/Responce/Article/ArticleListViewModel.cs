@@ -9,15 +9,8 @@ namespace WebBlog.Contracts.Models.Responce.Article
 {
     public class ArticleListViewModel
     {
+#pragma warning disable IDE1006 // Стили именования
         public List<ArticleViewModel> blogArticles { get; set; } = null!;
-
-        //public ArticleListViewModel(IEnumerable<DAL.Models.Article> blogArticles, BlogUser user)
-        //{
-        //    _blogArticles = new List<ArticleViewModel>();
-        //    foreach (var blogArticle in blogArticles)
-        //    {
-        //        _blogArticles.Add(new ArticleViewModel() blogArticle, user));
-        //    }
-        //}
+#pragma warning restore IDE1006 // Стили именования
     }
 }

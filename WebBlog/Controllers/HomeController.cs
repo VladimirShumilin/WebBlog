@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using WebBlog.Extensions;
 using WebBlog.Models;
 
 namespace WebBlog.Controllers
@@ -30,6 +31,7 @@ namespace WebBlog.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error(string message)
         {
+            _logger.CommonError(null,message);
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier , Message = message});
         }
 

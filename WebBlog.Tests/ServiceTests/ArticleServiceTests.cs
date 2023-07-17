@@ -360,7 +360,7 @@ namespace WebBlog.Tests.ServiceTests
             var sortOrder = "Title";
 
             // Act
-            var result = _articleService.SortOrder(articles, sortOrder);
+            var result = ArticleService.SortOrder(articles, sortOrder);
 
             // Assert
             var expectedOrder = new List<string> { "Article A", "Article B", "Article C" };
@@ -381,7 +381,7 @@ namespace WebBlog.Tests.ServiceTests
             var sortOrder = "Author";
 
             // Act
-            var result = _articleService.SortOrder(articles, sortOrder);
+            var result = ArticleService.SortOrder(articles, sortOrder);
 
             // Assert
             var expectedOrder = new List<string> { "author1@example.com", "author2@example.com", "author3@example.com" };
@@ -402,7 +402,7 @@ namespace WebBlog.Tests.ServiceTests
             var sortOrder = "DateCreation";
 
             // Act
-            var result = _articleService.SortOrder(articles, sortOrder);
+            var result = ArticleService.SortOrder(articles, sortOrder);
 
             // Assert
             var expectedOrder = new List<DateTime>
@@ -428,7 +428,7 @@ namespace WebBlog.Tests.ServiceTests
             var sortOrder = "InvalidSortOrder";
 
             // Act
-            var result = _articleService.SortOrder(articles, sortOrder);
+            var result = ArticleService.SortOrder(articles, sortOrder);
 
             // Assert
             var expectedOrder = new List<DateTime>

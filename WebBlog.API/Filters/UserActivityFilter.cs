@@ -4,14 +4,25 @@ using WebBlog.Extensions;
 
 namespace WebBlog.Filters
 {
+    /// <summary>
+    /// Фильтр логирования доступа к контроллерам
+    /// </summary>
     public class UserActivityFilter : IActionFilter
     {
         private readonly ILogger<UserActivityFilter> _logger;
 
+        /// <summary>
+        /// Конструктор
+        /// </summary>
+        /// <param name="logger"></param>
         public UserActivityFilter(ILogger<UserActivityFilter> logger)
         {
             _logger = logger;
         }
+        /// <summary>
+        /// Called after the action executes, before the action result.
+        /// </summary>
+        /// <param name="context"></param>
         public void OnActionExecuted(ActionExecutedContext context)
         {
             // Получаем имя пользователя и имя контроллера
@@ -29,7 +40,10 @@ namespace WebBlog.Filters
 
            
         }
-
+        /// <summary>
+        /// Called before the action executes, after model binding is complete.
+        /// </summary>
+        /// <param name="context"></param>
         public void OnActionExecuting(ActionExecutingContext context)
         {
             // Получаем имя пользователя и имя контроллера
